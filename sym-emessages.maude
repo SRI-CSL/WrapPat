@@ -1,0 +1,125 @@
+fmod SYM-EMESSAGES is 
+  inc EMESSAGES .
+
+ var sev : Sym-Event .
+ var ev : Event .
+ var evs : Events .
+ var id : Id .
+ var ssbs : SSBs .
+ vars p1 p2 : Port .
+ var emsg : EMsg .
+ var emsgs : EMsgs .
+ vars ik1 ik2 ik : IK .
+ var in : InEv .
+ var out : OutEv .
+ var sIn : Sym-In .
+ var sOut : Sym-Out .
+ var port : Port .
+ var sId : Sym-Id .
+
+ sort Sym-Event .
+ subsort Sym-Event < Event .
+ op sev : Nat Nat -> Sym-Event . 
+ 
+ sort Sym-Id .
+ subsort Sym-Id < Id .
+ op sid : Nat Nat -> Sym-Id .
+
+ sort Sym-In .
+ subsort Sym-In < InEv .
+ op sin : Nat Nat -> Sym-In .
+
+ sort Sym-Out .
+ subsort Sym-Out < OutEv .
+ op sout : Nat Nat -> Sym-Out .
+
+ sorts IK IKEle .
+ subsort IKEle < IK .
+ op none : -> IK .
+ op __ : IK IK -> IK [ctor assoc comm id: none] .
+
+ op toIK : Events -> IK .
+ eq toIK(none) = none .
+ eq toIK(ev evs) = ik(ev) toIK(evs) .
+
+ op ik : Event -> IKEle .
+ op ik : Id -> IKEle .
+ op ik : InEv -> IKEle .
+ op ik : OutEv -> IKEle .
+ op ik : Port -> IKEle .
+
+
+ op size : IK -> Nat .
+ eq size((none).IK) = 0 .
+ eq size(ik(id:Id) ik1) = s(size(ik1)) .
+ eq size(ik(in:InEv) ik1) = s(size(ik1)) .
+ eq size(ik(out:OutEv) ik1) = s(size(ik1)) .
+ eq size(ik(port:Port) ik1) = s(size(ik1)) .
+
+ op intersect : IK IK -> IK .
+ ceq intersect(ik ik1,ik ik2) = ik intersect(ik1,ik2) 
+  if ik =/= none .
+ eq intersect(ik1,ik2) = none [owise] .
+
+ --- sort Sym . 
+ --- subsort Sym-Event < Sym .
+ --- subsort Sym-Device < Sym .
+ --- subsort Sym-FB < Sym .
+
+ sorts SSB SSBs .
+ subsort SSB < SSBs .
+ op none : -> SSBs .
+ op __ : SSBs SSBs -> SSBs [ctor assoc comm id: none] .
+
+ op _:~_ : Sym-Event Event -> SSB .
+ op _:~_ : Sym-Id Id -> SSB .
+ op _:~_ : Sym-In InEv -> SSB .
+ op _:~_ : Sym-Out OutEv -> SSB .
+
+ 
+ op _[_] : Event SSBs -> Event .
+ op _[_] : Id SSBs -> Id .
+ op _[_] : InEv SSBs -> InEv .
+ op _[_] : OutEv SSBs -> OutEv .
+ op _[_] : Port SSBs -> Port .
+ op _[_] : EMsg SSBs -> EMsg .
+ op _[[_]] : EMsgs SSBs -> EMsgs .
+ op _[[_]] : Events SSBs -> Events .
+ op _[_] : IK SSBs -> IK .
+ 
+
+ eq sev[(sev :~ ev) ssbs] = ev .
+ eq ev[ssbs] = ev [owise] .
+
+ eq sId[(sId :~ id) ssbs] = id .
+ eq id[ssbs] = id [owise] .
+
+ eq sIn[(sIn :~ in) ssbs] = in .
+ eq in[ssbs] = in [owise] .
+
+ eq sOut[(sOut :~ out) ssbs] = out .
+ eq out[ssbs] = out [owise] .
+
+
+ *** Ports
+ eq {id,in}[ssbs] = {id[ssbs],in[ssbs]} .
+ eq {id,out}[ssbs] = {id[ssbs],out[ssbs]} .
+ eq {id,p1}[ssbs] = {id[ssbs],p1[ssbs]} .
+
+ *** EMgs
+ eq {p1,ev}[ssbs] = {p1[ssbs],ev[ssbs]} .
+ eq (none).EMsgs[[ssbs]] = (none).EMsgs .
+ eq emsg[[ssbs]] = emsg[ssbs] .
+ eq (emsg emsgs)[[ssbs]] = (emsg[ssbs]) (emsgs[[ssbs]]) .
+
+ *** Events
+ eq (none).Events[[ssbs]] = (none).Events . 
+ eq (ev evs)[[ssbs]] = (ev[ssbs]) (evs[[ssbs]]) .
+
+ *** IK 
+ eq (none).IK[ssbs] = (none).IK . 
+ eq (ik(id) ik)[ssbs] = (ik(id[ssbs])) (ik[ssbs]) .
+ eq (ik(ev) ik)[ssbs] = (ik(ev[ssbs])) (ik[ssbs]) .
+ 
+endfm
+

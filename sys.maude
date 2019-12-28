@@ -1,0 +1,345 @@
+view Id from TRIV to ID is
+  sort Elt to Id .
+endv
+
+
+fmod SYSTEM is
+  inc APPLICATION .
+  inc MESSAGES .
+  inc MAP{Id,Id} .
+  inc POLICY .           ---- wrapped  
+  
+*** msgs {{srcdevId,{fbOPort}},{tgtdevId,{fbIPort}},ev}
+
+  vars sysId appId id : Id .
+  var attrs attrs1 : MyAttrs .
+  var msgs : Msgs .
+  var apps devs devs1 : Apps .
+  var sys : System .
+  var fbs : FBs .
+  var dev : Application .
+
+**** GLOBALS set in scenario
+  op sysIns : Id -> Ins .
+  op sysOuts : Id -> Outs .
+  op sysMap : Id -> Map{Id,Id} .
+  
+***(
+  empty
+  _|->_ 
+  ,
+  M[D]
+)
+  sort Apps .
+  subsort Application < Apps .
+  op none : -> Apps .
+  op __ : Apps Apps -> Apps [ctor assoc comm id: none] .
+  
+  sorts System SysIntruder .
+    
+  op [_|_|_] : Id Id MyAttrs -> System .
+  op devs`:_ : Apps -> MyAttr .
+  op iMsgs`:_ : Msgs -> MyAttr .
+  op oMsgs`:_ : Msgs -> MyAttr .
+  op sysLinks`:_ : Links -> MyAttr .
+
+  op iPol`:_ : iPolicy -> MyAttr .
+  op oPol`:_ : oPolicy -> MyAttr .
+
+  op getDevs : System -> Apps .
+  eq getDevs([sysId | appId | (devs : devs) ; attrs]) = devs .
+
+  op updateDevs : System Apps -> System .
+  eq updateDevs([sysId | appId | devs : devs ; attrs],devs1) 
+        = [sysId | appId | devs : devs1 ; attrs] .
+
+  op getDev : System Id -> Apps .   **** 0 or 1
+  op getDev$ : Apps Id -> Apps .   **** 0 or 1
+  eq getDev(sys,id) = getDev$(getDevs(sys),id) .
+  eq getDev$([id | attrs] devs,id) = [id | attrs] .
+  eq getDev$(devs,id) = none [owise] .
+
+
+  op getFBs : System -> FBs .
+  op getFBs$ : Apps FBs -> FBs .
+  eq getFBs(sys) = getFBs$(getDevs(sys),none) .
+  eq getFBs$(none,fbs) = fbs .
+  eq getFBs$(devs dev,fbs) 
+      = getFBs$(devs,fbs getFBs(dev)) .
+
+  op [_,_] : System Msgs -> SysIntruder [ctor] .
+
+  op getSys : SysIntruder -> System .
+  eq getSys([sys,msgs]) = sys .
+
+  op getMsgs : SysIntruder -> Msgs .
+  eq getMsgs([sys,msgs]) = msgs .
+
+
+  op mkSys : Id Id Apps Msgs -> System .
+  eq mkSys(sysId,appId,devs,msgs) =
+         [sysId | appId | devs : devs ; 
+         iMsgs : msgs ;
+         oMsgs : none 
+        ] .
+
+  op addAttr : System MyAttrs -> System .
+  eq addAttr([sysId | appId | attrs], attrs1) =
+          [sysId | appId | attrs ; attrs1] .
+endfm
+
+fmod SYS-AUX is
+  inc SYSTEM .
+  inc APP-AUX .  
+  inc SIGNED-MESSAGES .  ---- wrapped
+  
+  vars devs devs1 devs2 : Apps .
+  var dev dev1 : Application .
+  vars fbs fbs1 : FBs .
+  vars sysId tdevId sdevId id devId devId0 fbId fbId0 appId 
+         : Id .
+  var fbC : FbC .
+  vars attrs attrs1 : MyAttrs .
+  vars imsgs imsgs0 imsgs1 omsgs1 omsgs0 omsgs msgs : Msgs .
+  vars emsgs emsgs0 emsgs1  : EMsgs .
+  var msg : Msg .
+  var emsg : EMsg .
+  var out : OutEv .
+  var in : InEv .
+  var fbOPort fbIPort oport : Port .
+  var ev : Event .
+  var links links0 : Links .
+  var idmap : Map{Id,Id} .
+  var b : Bool .
+  var iPol : iPolicy .
+ 
+ **** initially devs should have ticked false  
+ **** all devs have ticked : true, 
+ **** (and all fbs will as well)  
+   op isDone : Apps -> Bool .
+   eq isDone(none) = true .
+   eq isDone([devId | ticked : false ; attrs] devs)
+       = false .
+   eq isDone(devs) = true [owise] .
+ 
+***(
+  op deliver2Devs : Apps Msgs Links Map{Id,Id} -> Apps .
+   ceq deliver2Devs(devs 
+         [tdevId | iEMsgs : emsgs ; attrs],
+         {{sdevId, fbOPort}, {tdevId, {fbId,in}}, ev} imsgs,
+         links,idmap)
+    =
+     deliver2Devs(devs 
+          [tdevId | iEMsgs : (emsgs emsg) ;  attrs],
+          imsgs, links, idmap
+          ) 
+     if emsg := (if portOpen(tdevId,{fbId,in},links,idmap)
+                 then {{fbId,in},ev}
+                 else none
+                 fi)  .
+           
+   eq deliver2Devs(devs,imsgs,links,idmap)
+        = resetTicks(devs,none) [owise] .
+
+  op portOpen : Id Port Links Map{Id,Id} -> Bool .
+  eq portOpen(tdevId,{fbId,in},
+              {{fbId0,out},{fbId,in}} links,idmap)
+     = idmap[fbId] =/= idmap[fbId0] .
+  eq portOpen(tdevId,{fbId,in},links,idmap) = true [owise] .
+  )
+
+   op deliver2Devs : Apps Msgs Links Map{Id,Id} -> Apps .
+   ceq deliver2Devs(devs 
+         [tdevId | iEMsgs : emsgs ; attrs],
+         {{sdevId, fbOPort}, {tdevId, {fbId,in}}, ev} imsgs,
+         links,idmap)
+    =
+     deliver2Devs(devs 
+          [tdevId | iEMsgs : (emsgs emsgs0) ;  attrs],
+          imsgs, links, idmap
+          ) 
+     if emsgs0 := checkMsg(tdevId,{fbId,in}, ev, --- 0 or 1
+                          links,idmap,attrs) .
+           
+   eq deliver2Devs(devs,imsgs,links,idmap)
+        = resetTicks(devs,none) [owise] .
+
+ 
+   op checkMsg : Id Port Event Links Map{Id,Id} MyAttrs 
+                 -> EMsgs .
+   op checkPolicy : Port Event Links Map{Id,Id} MyAttrs 
+                 -> EMsgs .
+   op checkPort : Id EMsgs Links Map{Id,Id} -> EMsgs .
+
+   eq checkMsg(tdevId,{fbId,in},ev,links,idmap,attrs)              = checkPort(tdevId,
+          checkPolicy({fbId,in},ev,links,idmap,attrs),
+          links,idmap) .
+
+   ceq checkPort(tdevId,emsgs,links,idmap) = 
+     (if idmap[fbId] == idmap[fbId0] then none else emsgs fi)
+   if {{fbId,in},ev} := emsgs
+   /\ {{fbId0,out},{fbId,in}} links0 := links .
+
+   eq checkPort(tdevId,emsgs,links,idmap) = emsgs [owise] .
+          
+   eq checkPolicy({fbId,in},ev,links,idmap,
+             (iPol : ([i : fbId ; in, devId0] iPol) ; attrs))
+      = (if isSigned(ev,devId0)
+         then {{fbId,in},unsign(ev)}
+         else none
+         fi) .
+   
+    eq checkPolicy({fbId,in},ev,links,idmap,attrs) 
+      = {{fbId,in},unsign(ev)} [owise] .
+     
+**** [i : fbId ; in, devId0]     
+    
+   op resetTicks : Apps Apps -> Apps .
+   ceq resetTicks(devs dev,devs1) = 
+      resetTicks(devs,devs1 dev1)             
+   if [devId | (fbs : fbs) ; (ticked : b) ; attrs] := dev
+   /\ fbs1 := resetTicks(fbs,none) 
+   /\ dev1 := [devId | (fbs : fbs1) ; (ticked : false) ;
+                       attrs] 
+   .
+   eq resetTicks(none,devs1) = devs1 .
+  
+   op resetTicks : FBs FBs -> FBs .
+   eq resetTicks(fbs 
+                 [fbId : fbC | ticked : b ; attrs], fbs1) 
+     = resetTicks(fbs, 
+           fbs1 [fbId : fbC | ticked : false ; attrs]) .
+    eq resetTicks(none,fbs) = fbs .
+ 
+**** collect emsgs to route and put in iMsgs oMsgs
+  sort DevsMsgsMsgs .
+  op {_,_,_} : Apps Msgs Msgs -> DevsMsgsMsgs [ctor] .
+
+  op extractOutMsgs : Id Apps Apps Msgs Msgs 
+                      Links Map{Id,Id}  -> DevsMsgsMsgs .
+
+  eq extractOutMsgs(sysId,none,devs1,imsgs1,omsgs1,
+                    links,idmap) 
+    = 
+    {devs1,imsgs1,omsgs1} .
+  
+  ceq extractOutMsgs(sysId,dev devs,devs1,imsgs1,omsgs1, 
+                   links,idmap) 
+    = 
+     extractOutMsgs(sysId,devs,devs1 dev1,imsgs1 imsgs0, 
+                    omsgs1 omsgs0,links,idmap) 
+  if {dev1,imsgs0,omsgs0}
+      := extractOutMsgs$(sysId,dev,links,idmap) .
+
+  op extractOutMsgs$ : Id Application Links Map{Id,Id} 
+                         -> DevsMsgsMsgs .
+  op extractOutMsgs$$ : Id EMsgs Application Msgs Msgs 
+           Links Map{Id,Id} -> DevsMsgsMsgs .
+
+  ceq extractOutMsgs$(sysId,
+        [devId | iEMsgs : emsgs0 ; oEMsgs : emsgs ; attrs],
+        links,idmap)
+      =
+    extractOutMsgs$$(sysId,emsgs0,
+           [devId | iEMsgs : none ; oEMsgs : none ; attrs],
+           none,omsgs1,links,idmap)
+   if omsgs1 := emsgs2omsgs(sysId,devId,emsgs,none,links) .  
+ 
+  eq extractOutMsgs$$(sysId,none,dev,imsgs,omsgs,links,idmap)
+         = {dev,imsgs,omsgs} .                             
+  ceq extractOutMsgs$$(sysId, emsgs1 emsg,
+        [devId | iEMsgs : emsgs ; attrs],
+         imsgs,omsgs,links,idmap)
+     = extractOutMsgs$$(sysId,emsgs1,        
+              [devId | iEMsgs : (emsgs  emsgs0) ; attrs],
+              imsgs imsgs0,omsgs,links,idmap)   
+   if {{fbId,in},ev} := emsg
+   /\ {{fbId0,out},{fbId,in}} links0 := links
+   /\ devId0 := idmap[fbId]
+   /\ emsgs0 := (if devId == devId0 then emsg else none fi)
+   /\ imsgs0 := 
+      (if devId == devId0 
+       then none 
+       else {{devId,{fbId0,out}},{devId0,{fbId,in}},ev}
+       fi) .
+
+  op emsgs2omsgs : Id Id EMsgs Msgs Links -> Msgs .
+
+  eq emsgs2omsgs(sysId,devId,{oport,ev} emsgs,omsgs,
+             {fbOPort,oport} links)
+  =
+     emsgs2omsgs(sysId,devId,emsgs,
+                 omsgs {{devId,fbOPort}, {sysId,oport},ev}, 
+                 {fbOPort,oport} links) .
+
+  eq emsgs2omsgs(sysId,devId, emsgs,omsgs,links)
+       = omsgs [owise] .
+
+  
+endfm
+
+mod SYS-EXE is
+  inc SYS-AUX .
+  inc APP-EXE .
+  
+  vars devs devs1 devs2 : Apps .
+  var dev dev1 : Application .
+  vars fbs fbs1 : FBs .
+  vars sysId  appId : Id .
+  vars attrs attrs1 : MyAttrs .
+  vars imsgs imsgs0 imsgs1 omsgs1 omsgs0 omsgs msgs : Msgs .
+  var msg : Msg .
+  
+
+  crl[sys-deliver]:
+   [sysId | appId | devs : devs ; iMsgs : imsgs ; attrs]
+  =>
+   [sysId | appId | devs : devs1 ; iMsgs : none ; attrs]
+  if isDone(devs) 
+  /\ imsgs =/= none
+  /\ devs1 := deliver2Devs(devs,imsgs, 
+                           appLinks(appId),sysMap(sysId)) 
+  [print "\nsys-deliver: imsgs = " imsgs] 
+  .
+  ****  sets ticked false in fbs and devs
+    
+ crl[sys-collect]:
+   [sysId | appId |
+     devs : devs ; 
+     iMsgs : imsgs ; 
+     oMsgs : omsgs ; 
+     attrs]
+  =>
+   [sysId | appId |
+     devs : devs2 ; 
+     iMsgs : (imsgs imsgs1) ; 
+     oMsgs : (omsgs omsgs1) ; 
+     attrs]
+  if isDone(devs) ---  all devs ticked
+  /\ {devs1, imsgs1, omsgs1} := 
+        extractOutMsgs(sysId,devs,none,none,none,
+                       appLinks(appId),
+                       sysMap(sysId))
+  /\ devs2 := (if (imsgs1 == none) --- only internal msgs
+               then resetTicks(devs1,none)
+               else devs1
+               fi)
+  [print "\nsys-collect: imsgs1 = " imsgs1 "\n    omsgs1 = " omsgs1] 
+  .
+
+rl[sys-intruder]:
+[[sysId | appId | 
+   devs : devs ; 
+   iMsgs : imsgs ;
+   oMsgs : omsgs ; 
+   attrs], msg msgs]
+=> 
+[[sysId | appId | 
+   devs : devs ; 
+   iMsgs : (imsgs msg) ;
+   oMsgs : omsgs ; 
+   attrs], msgs] 
+ [print "\nsys-intruder: msg = " msg] .
+   
+                          
+ endm

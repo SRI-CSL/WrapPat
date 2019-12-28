@@ -1,0 +1,74 @@
+mod PNP-SCENARIO is
+  inc FB-LIB .
+  inc APP-EXE .
+
+  
+ **** op PnP : -> AppC .
+
+  eq appLinks(id("pnp")) = 
+   {{id("vac"),outEv("NoVac")}, {id("ctl"),inEv("NoVac")}}
+   {{id("vac"),outEv("HasVac")},{id("ctl"),inEv("HasVac")}}
+   {{id("ctl"),outEv("VacOn")}, {id("vac"), inEv("VacOn")}}
+   {{id("ctl"),outEv("VacOff")},{id("vac"), inEv("VacOff")}} 
+   {{id("track"),outEv("atR")}, {id("ctl"),inEv("atR")}}
+   {{id("track"),outEv("atL")},{id("ctl"),inEv("atL")}}
+   {{id("ctl"),outEv("GoR")}, {id("track"), inEv("GoR")}}
+   {{id("ctl"),outEv("GoL")}, {id("track"), inEv("GoL")}}
+   {{id("track"),outEv("GoR1")},{id("track"), inEv("GoR1")}} 
+   {{id("track"),outEv("GoL1")},{id("track"), inEv("GoL1")}} 
+   {{id("pnp"), {id("ctl"),inEv("start")}},
+    {id("ctl"),inEv("start")}}
+   {{id("ctl"),outEv("stopped")},
+    {id("pnp"),{id("ctl"),outEv("stopped")}}}
+   .
+
+  var emsg : EMsg .
+  var emsgs : EMsgs .
+  ops emsgStart emsgI emsgI1 : -> EMsg .
+  eq emsgStart = {{id("ctl"),inEv("start")}, ev("start")} .
+  eq emsgI = {{sid(10,1),sin(10,2)},sev(10,3)} .
+  eq emsgI1 = {{sid(20,1),sin(20,2)},sev(20,3)} .
+
+  eq appFBs(id("pnp")) = id("vac") id("track") id("ctl") .
+
+**** from fb-lib fbs have ticked = false, ready for trans
+  op pnpInit : EMsg -> Application .
+  eq pnpInit(emsg) = 
+     [id("pnp") |
+     (fbs : (vacInit(id("vac")) 
+           trackInit(id("track")) 
+           ctlInit(id("ctl"))) ) ;
+     iEMsgs : emsg ;
+     oEMsgs : none ;
+     ssbs : none ] .
+ 
+  op pnpInitI : Application EMsgs -> AppIntruder .
+  eq pnpInitI(app:Application,emsgs) = [app:Application,emsgs] .
+
+  vars vacFB trackFB : FB .
+  var fbs : FBs .
+  
+  op badState : FBs -> Bool .
+  ceq badState(vacFB trackFB fbs) 
+   = true
+   if cidOf(vacFB) == vac 
+   /\ cidOf(trackFB) == track
+   /\ (getState(vacFB) == st("off")
+       or getState(vacFB) == st("on-novac"))
+   /\ getState(trackFB) == st("mvL") .
+  eq badState(fbs) = false [owise] .
+
+
+  op badState : Application -> Bool .
+  eq badState(app:Application)
+   = badState(getFBs(app:Application)) .
+
+  op badState : AppIntruder -> Bool .
+  eq badState([app:Application,emsgs])
+   = badState(getFBs(app:Application)) .
+
+        
+endm
+eof
+
+red pnpInit(emsgStart) .

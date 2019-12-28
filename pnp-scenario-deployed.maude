@@ -1,0 +1,255 @@
+fmod DEPLOY-APP is
+ inc APPLICATION .
+ inc SYSTEM .
+ 
+ vars str1 str2 : String .
+ vars dId fbId sysId id : Id .
+ var fbC : FbC .
+ var smap : Map{Id,Id} .
+ var msgs : Msgs .
+ var emsg : EMsg .
+ var emsgs : EMsgs .
+ var app : Application .
+ vars devs devs1 : Apps .
+ vars fbs fbs1 : FBs .
+ vars fbattrs devattrs attrs : MyAttrs .
+ 
+ **** assume app is initial with fbs ticked
+ **** and initial messages are from external source
+ 
+ op deployFBs : FBs Apps Map{Id,Id} -> Apps .
+ eq deployFBs(none,devs,smap) = devs .
+ eq deployFBs([fbId : fbC | fbattrs] fbs1,
+              [dId | fbs : fbs ; devattrs] devs,
+              ((fbId |-> dId) , smap))
+    =
+    deployFBs(fbs1,
+             [dId | fbs : (fbs [fbId : fbC | fbattrs]) ; 
+                    devattrs] devs,
+              smap) .
+
+ **** initialize dev containing fbId, initially ticked
+ eq deployFBs([fbId : fbC | fbattrs] fbs1,
+              devs,
+              ((fbId |-> dId) , smap))
+    =
+    deployFBs(fbs1,
+           addAttr(mkApp(dId, [fbId : fbC | fbattrs],none), 
+                   (ticked : true)) devs,
+              smap) .
+ 
+  op deployApp : Id Application Map{Id,Id} -> System .
+
+  ceq deployApp(sysId,app,smap) =
+         mkSys(sysId,getId(app),devs,msgs)  
+  if emsgs := getIEMsgs(app)
+  /\ devs := deployFBs(getFBs(app),none,smap)
+  /\ msgs := emsgs2imsgs(sysId,emsgs,smap,none) .
+
+  op emsgs2imsgs : Id EMsgs Map{Id,Id} Msgs -> Msgs .
+  eq emsgs2imsgs(sysId,none,smap,msgs) = msgs .
+  eq emsgs2imsgs(sysId,emsg emsgs,smap,msgs) 
+     = emsgs2imsgs(sysId,emsgs,smap,
+                   msgs emsg2imsg(sysId,emsg,smap)) .
+                   
+  op emsg2imsg : Id EMsg Map{Id,Id}  -> Msgs .   --- 0 or 1
+  eq emsg2imsg(id,{{fbId,inEv(str1)},ev(str2)}, 
+               ((fbId |-> dId), smap))     
+     = {{id,{dId,inEv(str1)}}, 
+        {dId,{fbId,inEv(str1)}},ev(str2)} .
+
+
+***(
+  {{id("d0"),{id("fb0"),outEv("start")}},
+   {id("d1"), {id("ctl"),inEv("start")}}, 
+   ev("start")} .
+ )
+
+endfm 
+
+
+mod PNP-SCENARIO-DEPLOYED is
+  inc SYS-EXE .
+  inc PNP-SCENARIO .
+  inc DEPLOY-APP .
+  
+  eq sysMap(id("pnp1-1")) =
+       id("ctl") |-> id("d1"), 
+       id("vac") |-> id("d2"), 
+       id("track") |-> id("d3")  . 
+       
+       
+  eq sysMap(id("pnp-vc-t")) =
+       id("ctl") |-> id("d1"), 
+       id("vac") |-> id("d1"), 
+       id("track") |-> id("d2")  . 
+       
+ 
+  ops msgStart msgI msgI1 : -> Msg .
+  eq msgStart = 
+  {{id("d0"),{id("fb0"),outEv("start")}},
+   {id("d1"), {id("ctl"),inEv("start")}}, 
+   ev("start")} .
+ 
+
+  ops Dev1 Dev2 Dev3 : -> Application .
+  eq Dev1 = addAttr(mkApp(id("d1"), 
+                          ctlInit(id("ctl")),none),
+                    ticked : true) .
+  eq Dev2 = addAttr(mkApp(id("d2"), 
+                    vacInit(id("vac")),none),
+                    ticked : true) .
+  eq Dev3 = addAttr(mkApp(id("d3"), 
+                        trackInit(id("track")),none),
+                    ticked : true) .
+
+  eq appLinks(id("d1")) = appLinks(id("pnp")) .
+  eq appLinks(id("d2")) = appLinks(id("pnp")) .
+  eq appLinks(id("d3")) = appLinks(id("pnp")) .
+  
+***** initially devs have ticked = true
+  op pnpD1-1Init : Msgs -> System .
+  eq pnpD1-1Init(msgs:Msgs) = 
+     [id("pnp1-1") | id("pnp") |
+        devs : (Dev1 Dev2 Dev3) ;
+        iMsgs : msgs:Msgs ;
+        oMsgs : none
+         ] .
+ 
+
+  op pnpDInitI : System Msgs -> SysIntruder .
+  eq pnpDInitI(sys:System,msgs:Msgs) 
+         = [sys:System,msgs:Msgs] .
+
+  op badState : System -> Bool .
+  eq badState(sys:System)
+   = badState(getFBs(sys:System)) .
+
+  op badState : SysIntruder -> Bool .
+  eq badState([sys:System,msgs:Msgs])
+   = badState(getFBs(sys:System)) .
+
+  ops badHasVac badatL badGoL badVacOff : -> Msg .
+  eq badHasVac =
+      {{id("d2"),{id("vac"),outEv("HasVac")}},
+       {id("d1"),{id("ctl"),inEv("HasVac")}}, 
+       ev("HasVac")} .
+ 
+  eq badatL =
+      {{id("d3"),{id("track"),outEv("atL")}}, 
+       {id("d1"),{id("ctl"),inEv("atL")}}, 
+       ev("atL")} .
+
+  eq badGoL =
+      {{id("d1"),{id("ctl"),outEv("GoL")}}, 
+       {id("d3"),{id("track"), inEv("GoL")}},
+       ev("GoL")} .
+
+  eq badVacOff =
+      {{id("d1"),{id("ctl"),outEv("VacOff")}},
+       {id("d2"),{id("vac"),inEv("VacOff")}}, 
+      ev("VacOff")} .       
+
+  ops dPnP1-1 dPnP-vc-t : -> System .
+
+  eq dPnP1-1 = deployApp(id("pnp1-1"),pnpInit(emsgStart),
+                         sysMap(id("pnp1-1"))) .
+
+  eq dPnP-vc-t = deployApp(id("pnp-vc-t"),pnpInit(emsgStart),
+                         sysMap(id("pnp-vc-t")) ) .
+
+endm  
+
+eof
+
+select PNP-SCENARIO-DEPLOYED .
+set print attribute on .
+rew [20] dPnP1-1 .
+
+set print attribute off .
+search [1] pnpDInitI(dPnP1-1,none) =>+  sysI:SysIntruder such that badState(sysI:SysIntruder) .
+No Solution
+
+search  pnpDInitI(dPnP1-1,badVacOff) =>+  sysI:SysIntruder such that badState(sysI:SysIntruder) .
+Solution 31 (state 735)
+
+search  pnpDInitI(dPnP1-1,badHasVac) =>+  sysI:SysIntruder such that badState(sysI:SysIntruder) .
+Solution 28 (state 684)
+
+set print attribute on .
+red dPnP-vc-t .
+rew [20] dPnP-vc-t .
+
+set print attribute off .
+search [1] pnpDInitI(dPnP-vc-t,none) =>+  sysI:SysIntruder such that badState(sysI:SysIntruder) .
+No solution.
+
+search pnpDInitI(dPnP-vc-t,{{id("d1"),{id("vac"),outEv("HasVac")}}, {id("d1"),{id("ctl"),inEv("HasVac")}}, ev("HasVac")}) =>+ sysI:SysIntruder such that badState(sysI:SysIntruder) .
+Solution 8 (state 282)
+
+
+search pnpDInitI(dPnP-vc-t,{{id("d2"),{id("track"),outEv("atL")}}, {id("d1"),{id("ctl"),inEv("atL")}}, ev("atL")}) =>+ sysI:SysIntruder such that badState(sysI:SysIntruder) .
+Solution 2 (state 287)
+
+search pnpDInitI(dPnP-vc-t,{{id("d1"),{id("ctl"),outEv("GoL")}}, {id("d2"),{id("track"), inEv("GoL")}}, ev("GoL")}) =>+ sysI:SysIntruder such that badState(sysI:SysIntruder) .
+Solution 30 (state 311)
+
+
+search pnpDInitI(dPnP-vc-t,{{id("d1"),{id("ctl"),outEv("VacOff")}}, {id("d1"),{id("vac"),inEv("VacOff")}}, ev("VacOff")}) =>+ sysI:SysIntruder such that badState(sysI:SysIntruder) .
+No solution.
+
+
+  ops badHasVac1 badatL1 badGoL1 badVacOff1 : -> Msg .
+  eq badHasVac1 =
+      {{id("d1"),{id("vac"),outEv("HasVac")}},
+       {id("d1"),{id("ctl"),inEv("HasVac")}}, 
+       ev("HasVac")} .
+ 
+  eq badatL1 =
+      {{id("d2"),{id("track"),outEv("atL")}}, 
+       {id("d1"),{id("ctl"),inEv("atL")}}, 
+       ev("atL")} .
+
+  eq badGoL1 =
+      {{id("d1"),{id("ctl"),outEv("GoL")}}, 
+       {id("d2"),{id("track"), inEv("GoL")}},
+       ev("GoL")} .
+
+  eq badVacOff1 =
+      {{id("d1"),{id("ctl"),outEv("VacOff")}},
+       {id("d1"),{id("vac"),inEv("VacOff")}}, 
+      ev("VacOff")} .   
+      
+Maude> red dPnP1-1 .
+reduce in PNP-SCENARIO-DEPLOYED : dPnP1-1 .
+rewrites: 25 in 0ms cpu (0ms real) (301204 rewrites/second)
+result System: [id("pnp1-1") | id("pnp") | devs : (
+[id("d1") | ticked : true ;
+  fbs : [id("ctl") : ctl | state : st("init") ;
+    iEvEffs : none ;
+    oEvEffs : none ;
+    ticked : false] ;
+  iEMsgs : none ;
+  oEMsgs : none ;
+  ssbs : none] 
+[id("d2") | ticked : true ;
+  fbs : [id("vac") : vac | state : st("off") ;
+    iEvEffs : none ;
+    oEvEffs : none ;
+    ticked : false] ;
+  iEMsgs : none ;
+  oEMsgs : none ;
+  ssbs : none] 
+[id("d3") | ticked : true ;
+  fbs : [id("track") : track | state : st("L") ;
+    iEvEffs : none ;
+    oEvEffs : none ;
+    ticked : false] ;
+  iEMsgs : none ;
+  oEMsgs : none ;
+  ssbs : none]) ;
+iMsgs : {{id("pnp1-1"),{id("d1"),inEv("start")}},
+         {id("d1"),{id("ctl"),inEv("start")}},
+         ev("start")} ;
+oMsgs : none]
+          

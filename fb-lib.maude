@@ -1,0 +1,145 @@
+fmod VACUMM-FB is
+  inc FB .
+
+  op vac : -> FbC .
+  eq insFB(vac) = inEv("VacOn") inEv("VacOff") .
+  eq outsFB(vac) = outEv("NoVac") outEv("HasVac") .
+  eq stsFB(vac) = st("off") st("on") .
+  eq trsFB(vac) = tr(st("on"), st("off"), 
+                     inEv("VacOff") is ev("VacOff"),
+                     outEv("NoVac") :~ ev("NoVac"))
+                  tr(st("off"), st("on-novac"), 
+                     inEv("VacOn") is ev("VacOn"),
+                     outEv("NoVac") :~ ev("NoVac"))
+                  tr(st("off"), st("on"), 
+                     inEv("VacOn") is ev("VacOn"),
+                     outEv("HasVac") :~ ev("HasVac")) .
+
+  op vacInit : Id -> FB .
+  eq vacInit(fbId:Id) =
+     [fbId:Id : vac | state : st("off") ; ticked : false ;
+                      iEvEffs : none ; oEvEffs : none] .
+endfm
+
+fmod TRACK-FB is
+  inc FB .
+
+  op track : -> FbC .
+  eq insFB(track) = inEv("GoR") inEv("GoL")  inEv("GoR1")  inEv("GoL1") .
+  eq outsFB(track) = outEv("atR") outEv("atL") outEv("GoR1") outEv("GoL1") .
+  eq stsFB(track) = st("L") st("mvR") st("R") st("mvL") .
+  eq trsFB(track) = 
+     tr(st("L"), st("mvR"), 
+       inEv("GoR") is ev("GoR"),
+       outEv("GoR1") :~ ev("GoR1"))
+     tr(st("mvR"), st("R"), 
+       inEv("GoR1") is ev("GoR1"),
+       outEv("atR") :~ ev("atR"))
+     tr(st("R"), st("mvL"), 
+       inEv("GoL") is ev("GoL"),
+       outEv("GoL1") :~ ev("GoL1"))
+     tr(st("mvL"), st("L"), 
+       inEv("GoL1") is ev("GoL1"),
+       outEv("atL") :~ ev("atL")) .
+
+  op trackInit : Id -> FB .
+  eq trackInit(fbId:Id) =
+     [fbId:Id : track | state : st("L") ; ticked : false ;
+                      iEvEffs : none ; oEvEffs : none] .
+endfm
+
+fmod CONTROL-FB is
+  inc FB .
+
+  op ctl : -> FbC .
+  eq insFB(ctl) = 
+       inEv("start") inEv("atL") inEv("atR") 
+       inEv("HasVac") inEv("NoVac") inEv("stop") .
+  eq outsFB(ctl) = 
+       outEv("GoR") outEv("GoL") 
+       outEv("VacOn") outEv("VacOff")
+       outEv("stopped") .
+  eq stsFB(ctl) = st("init") st("LOff") st("ROff") 
+                 st("ROn") st("LOn") .
+  eq trsFB(ctl) = 
+     tr(st("init"), st("LOff"), 
+       inEv("start") is ev("start"),
+       outEv("GoR") :~ ev("GoR"))
+     tr(st("LOff"), st("ROff"), 
+       inEv("atR") is ev("atR"),
+       outEv("VacOn") :~ ev("VacOn"))
+     tr(st("ROff"), st("ROn"), 
+       inEv("HasVac") is ev("HasVac"),
+       outEv("GoL") :~ ev("GoL"))
+     tr(st("ROn"), st("LOn"), 
+       inEv("atL") is ev("atL"),
+       outEv("VacOff") :~ ev("VacOff"))
+     tr(st("LOn"), st("LOff"), 
+       inEv("NoVac") is ev("NoVac"),
+       outEv("GoR") :~ ev("GoR"))
+     tr(st("LOff"), st("init"), 
+       inEv("stop") is ev("stop"),
+       outEv("stopped") :~ ev("stopped"))  .
+
+  op ctlInit : Id -> FB .
+  eq ctlInit(fbId:Id) =
+     [fbId:Id : ctl | state : st("init") ; ticked : false ;
+                      iEvEffs : none ; oEvEffs : none] .
+
+**** probably need to handle "stop" in any state?
+****  need state pattern?
+endfm
+
+fmod BAD-CONTROL-FB is
+  inc FB .
+
+  op bad-ctl : -> FbC .
+  eq insFB(bad-ctl) = 
+       inEv("start") inEv("atL") inEv("atR") 
+       inEv("HasVac") inEv("NoVac")
+       inEv("stop") .
+  eq outsFB(bad-ctl) = 
+       outEv("GoR") outEv("GoL") 
+       outEv("VacOn") outEv("VacOff")
+       outEv("stopped") .
+  eq stsFB(bad-ctl) = st("init") st("LOff") 
+                  st("ROff") st("ROn") st("LOn") .
+  eq trsFB(bad-ctl) = 
+     tr(st("init"), st("LOff"), 
+       inEv("start") is ev("start"),
+       outEv("GoR") :~ ev("GoR"))
+     tr(st("LOff"), st("ROff"), 
+       inEv("atR") is ev("atR"),
+       outEv("VacOn") :~ ev("VacOn"))
+     tr(st("ROff"), st("ROn"), 
+       inEv("HasVac") is ev("HasVac"),
+       (outEv("GoL") :~ ev("GoL")) 
+       (outEv("VacOff") :~ ev("VacOff")) )
+     tr(st("ROn"), st("LOn"), 
+       inEv("atL") is ev("atL"),none)
+***** this may fail -- if both atL and NoVac arrive at once
+***** and the system has dropped one of them
+     tr(st("LOn"), st("LOff"), 
+       inEv("NoVac") is ev("NoVac"),
+       outEv("GoR") :~ ev("GoR"))
+     tr(st("LOff"), st("init"), 
+       inEv("stop") is ev("stop"),
+       outEv("stopped") :~ ev("stopped"))  .
+
+  op badctlInit : Id -> FB .
+  eq badctlInit(fbId:Id) =
+     [fbId:Id : bad-ctl | 
+                   state : st("init") ; ticked : false ;
+                   iEvEffs : none ; oEvEffs : none] .
+
+endfm
+
+
+fmod FB-LIB is
+  inc VACUMM-FB .
+  inc TRACK-FB  .
+  inc CONTROL-FB .
+  inc BAD-CONTROL-FB .
+
+endfm  
+

@@ -1,0 +1,8 @@
+load load
+load messages
+load policy
+load sys
+load pnp-scenario-deployed
+load wrap
+
+set print attribute on .

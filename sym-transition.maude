@@ -1,0 +1,243 @@
+***(
+sym-transition
+fmod CONSTRAINTS is 
+  inc SYM-EMESSAGES .   inc COND .
+  op condToCSet : Cond  CSetSet -> CSetSet .
+
+
+fmod SYM-TRANSITION is
+  inc TRANSITION .   inc CONSTRAINTS .
+  symtr(st1,st2,condToCSet(cond),oeffs)
+  op tr2symtr : Tr -> SymTr .
+  op trs2symtrs : Trs -> SymTrs .
+  op symtrsFB : Id State -> SymTrs .
+ 
+ fmod GENSOL is
+   inc SYM-TRANSITION .
+   op genSol : Id EMsgs CSetSet -> SBBsSet .
+ )
+
+fmod CONSTRAINTS is 
+  inc SYM-EMESSAGES .
+  inc COND .
+
+  var cs : Constraint .
+  var css : CSet .
+  vars ik1 ik ik2 ik0 : IK .
+  vars ids1 ids : Ids .
+  vars sEv symEv : Sym-Event .
+  var sId : Sym-Id .
+  vars in inEv : InEv .
+  var ins : Ins .
+  vars cond cond1 cond2 : Cond .
+  vars csss csss0 csss1 csss2 : CSetSet .
+  var ev : Event .
+  var evs : Events .
+  
+  
+  sorts Constraint CSet .
+  subsort Constraint < CSet .
+  op evc : InEv IK -> Constraint .
+
+  op none : -> CSet .
+  op __ : CSet CSet -> CSet [comm assoc id: none].  
+  op mem : Constraint CSet -> Bool .
+  eq mem(cs,cs css) = true .
+  eq mem(cs,css) = false [owise] .
+
+  op dom : CSet -> Ins .
+  op dom$ : CSet Ins -> Ins .
+  eq dom(css)  = dom$(css,none) .
+  eq dom$(evc(in,ik) css,ins) = dom$(css, ins in) .
+  eq dom$(none,ins) = ins .
+  
+  op size : CSet -> Nat .
+  eq size(cs css) = s size(css) .
+  eq size((none).CSet) = 0 .
+
+  sort CSetSet .
+  op [_] : CSet -> CSetSet [ctor] .
+  op none : -> CSetSet [ctor] .
+  op __ : CSetSet CSetSet -> CSetSet 
+           [ctor assoc comm id: none] .
+ 
+ 
+  op mem : IK IK -> Bool .
+  eq mem(ik1,ik1 ik2) = true .
+  eq mem(ik1,ik2) = false [owise] .
+
+  op getIK : Constraint -> IK .
+  eq getIK(evc(in,ik)) = ik .
+
+  op contains : IK Event -> Bool .
+  eq contains(ik ik(ev),ev) = true .
+  eq contains(ik,ev) = false [owise] .
+
+  op condToCSet : Cond  -> CSetSet .
+  op condToCSet$ : Cond CSetSet -> CSetSet .
+
+  eq condToCSet(cond) 
+     = remDup(condToCSet$(toNNF(cond),[none])) .
+
+ eq condToCSet$(tt,csss) = csss .
+ eq condToCSet$(ff,csss) = none .
+ eq condToCSet$(inEv is ev,csss) 
+    = constrain(inEv,ev,csss,none) .
+
+ *** Recall that conditions are in NNF
+ eq condToCSet$(not (inEv is ev), csss) 
+  = constrain(inEv,diff(allEvents,ev),csss,none) .
+
+ ceq condToCSet$(cond1 and cond2,csss)
+  = csss2
+  if csss1 := condToCSet$(cond1,csss)
+  /\ csss2 := condToCSet$(cond2,csss1) .
+
+ ceq condToCSet$(cond1 or cond2,csss)
+  = csss1 csss2
+  if csss1 := condToCSet$(cond1,csss)
+  /\ csss2 := condToCSet$(cond2,csss) .
+
+ op diff : Events Event -> Events .
+ eq diff(ev evs,ev) = evs .
+ eq diff(evs,ev) = evs [owise] .
+
+ op constrain : InEv Events CSetSet CSetSet -> CSetSet .
+ op constrain$ : InEv Events CSet -> CSetSet .
+ eq constrain(in,evs,none,csss) = csss .
+ eq constrain(in,evs,[css] csss0,csss) 
+ = constrain(in,evs,csss0,
+             constrain$(in,evs,css) csss) .
+
+ ceq constrain$(in,evs,evc(in,ik) css) 
+  = if ik0 == none then none else [evc(in,ik0) css] fi 
+  if ik0 := intersect(evs,ik,none) .
+
+ eq constrain$(in,evs,css) 
+  = [evc(in,toIK(evs)) css] [owise] .
+
+ op intersect : Events IK IK -> IK .
+ eq intersect(ev evs,ik(ev) ik0,ik)
+  = intersect(evs,ik0,ik(ev) ik) .
+ eq intersect(evs,ik0,ik) = ik [owise] .
+ 
+ op remDup : CSetSet -> CSetSet .
+ eq remDup([css] [css] csss) 
+  = remDup([css] csss) .
+ eq remDup(csss) = csss [owise] .
+ 
+ endfm
+ 
+fmod SYM-TRANSITION is
+  inc FB .
+  **** inc TRANSITION .
+  inc CONSTRAINTS .
+     
+  vars st st1 st2 : State .
+  var cond : Cond .
+  var oeffs : OutEvEffs .
+  var tr : Tr .
+  var trs : Trs .
+  var cid : Cid .
+  var symtrs : SymTrs .
+  
+  sort SymTr SymTrs .
+  subsort SymTr < SymTrs .
+  op none : -> SymTrs .
+  op __ : SymTrs SymTrs -> SymTrs 
+          [comm assoc id: none] .
+  op symtr : State State CSetSet OutEvEffs 
+      -> SymTr [ctor] . 
+
+  op tr2symtr : Tr -> SymTr .
+  eq tr2symtr(tr(st1,st2,cond,oeffs)) =
+      symtr(st1,st2,condToCSet(cond),oeffs) . 
+
+  op trs2symtrs : Trs -> SymTrs .
+  op trs2symtrs$ : Trs SymTrs -> SymTrs .
+  eq trs2symtrs(trs) = trs2symtrs$(trs,none) .
+  eq trs2symtrs$(tr trs,symtrs) =
+       trs2symtrs$(trs,symtrs tr2symtr(tr)) .
+  eq trs2symtrs$(none,symtrs) = symtrs .
+
+**** define in scenario
+**** op symtrsFB : Id -> SymTrs .
+
+ op symtrsFB : Cid State -> SymTrs .
+ eq symtrsFB(cid,st) =
+     trs2symtrs(filterTrs(trsFB(cid),st,none)) .
+  
+ endfm
+ 
+fmod GENSOL is
+  inc SYM-TRANSITION .
+
+  vars css css0 : CSet .
+  vars csss csss0 : CSetSet .
+  vars ssbs ssbs0 : SSBs .
+  vars ssbss ssbss0 ssbss1 : SSBsSet .
+  var fbid : Id .
+  var in : InEv .
+  var ev : Event .
+  var sEv : Sym-Event .
+  var sIn : Sym-In .
+  var sId : Sym-Id .
+  var ik1 : IK .
+  
+  vars emsgs emsgs0 emsgs1 : EMsgs .
+  vars emsg emsg0 : EMsg .
+  
+  sort SSBsSet .
+  op none : -> SSBsSet .
+  op __ : SSBsSet SSBsSet -> SSBsSet
+            [ctor assoc comm id: none] .
+  op `{_`} : SSBs -> SSBsSet [ctor] .
+  
+  op genSol : Id EMsgs CSetSet -> SSBsSet .
+  eq genSol(fbid,emsgs0,[css] csss) = 
+      genSol1(fbid,emsgs0,css)
+      genSol(fbid,emsgs0,csss) .
+  eq genSol(fbid,emsgs0,none) = none .
+  
+  op genSol1 : Id EMsgs CSet -> SSBsSet .
+  eq genSol1(fbid,{{fbid,in},ev} emsgs0,evc(in,ik1) css)
+      = 
+     (if contains(ik1,ev) 
+      then genSol1(fbid,emsgs0, css)
+      else none  **** no solution for this css
+      fi) .
+  eq genSol1(fbid,{{fbid,in},ev} emsgs0,css)
+     = none [owise] . --- no msg wanted on in
+  eq genSol1(fbid,emsgs,css) 
+     = genSol2(fbid,emsgs,css,{none}) [owise] .
+       
+  op genSol2 : Id EMsgs CSet SSBsSet -> SSBsSet .
+**** only symbolic emsgs left, |emsgs| = |css|
+  
+  eq genSol2(fbid,none,none,ssbss) = ssbss .
+
+  eq genSol2(fbid,{{sId,sIn},sEv} emsgs,
+             evc(in,ik1) css,ssbss) =
+     genSol2(fbid,emsgs,css,
+       addSSBs(sEv,ik1,((sId :~ fbid) (sIn :~ in)),
+               ssbss,none)) .
+  
+  
+  op addSSBs : Sym-Event IK SSBs SSBsSet SSBsSet
+               -> SSBsSet .
+****  add ssbs (sEv :~ ev) to each ssbs1 in ssbss
+  eq addSSBs(sEv,(ik(ev) ik1),ssbs, ssbss,ssbss1) 
+     = addSSBs(sEv,ik1,ssbs, ssbss, 
+             addSSBs1(ssbs (sEv :~ ev),ssbss,none)
+              ssbss1) .
+
+  eq addSSBs(sEv,none,ssbs, ssbss,ssbss1) = ssbss1 .
+
+  op addSSBs1 : SSBs SSBsSet SSBsSet
+               -> SSBsSet .
+  eq addSSBs1(ssbs,{ssbs0} ssbss,ssbss1) =
+      addSSBs1(ssbs,ssbss, ssbss1 {ssbs0 ssbs}) .
+  eq addSSBs1(ssbs,none,ssbss1) = ssbss1 .
+      
+endfm
+   

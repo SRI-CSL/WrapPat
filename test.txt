@@ -1,0 +1,72 @@
+mod TEST is
+  inc PNP-SCENARIO-DEPLOYED .
+op testSys : -> SysIntruder .
+eq testSys =  [[id("pnp-vc-t") | id("pnp") | devs : ([id("d1") | ticked : true ;
+fbs : ([id("ctl") : ctl | state : st("ROff") ;
+iEvEffs : none ;
+oEvEffs : none ;
+ticked : true] [id("vac") : vac | state : st("off") ;
+iEvEffs : none ;
+oEvEffs : none ;
+ticked : true]) ;
+iEMsgs : {{id("vac"),inEv("VacOn")},ev("VacOn")} ;
+oEMsgs : none ;
+ssbs : none] [id("d2") | ticked : true ;
+fbs : [id("track") : track | state : st("R") ;
+iEvEffs : none ;
+oEvEffs : none ;
+ticked : true] ;
+iEMsgs : none ;
+oEMsgs : none ;
+ssbs : none]) ;
+iMsgs : {{id("d1"),{id("vac"),outEv("HasVac")}},{id("d1"),{id("ctl"),inEv("HasVac")}},ev("HasVac")} ;
+oMsgs : none],(none).Msgs]
+.
+
+op testImsgs : -> Msgs .
+eq testImsgs = 
+{{id("d1"),{id("vac"),outEv("HasVac")}},
+ {id("d1"),{id("ctl"),inEv("HasVac")}},
+ ev("HasVac")} .
+
+ops d1-2 d2-2 d3-2 : -> Application .
+***(
+eq d1-2 = 
+.
+
+eq d2-2 = 
+ .
+  
+eq d3-2 = 
+  .
+)
+endm
+eof
+
+crl[sys-deliver]:
+[sysId | appId | devs : devs ; iMsgs : imsgs ; attrs]
+=>
+[sysId | appId | devs : devs1 ; iMsgs : none ; attrs]
+if isDone(devs) 
+/\ imsgs =/= none
+/\ devs1 := deliver2Devs(devs,imsgs, 
+                       appLinks(appId),sysMap(sysId)) 
+
+if emsgs0 := 
+red checkMsg(id("d1"),{id("ctl"),inEv("HasVac")}, ev("HasVac"),appLinks(id("pnp")),sysMap(id("pnp-vc-t")),none)) .
+
+result EMsg: {{id("ctl"),inEv("HasVac")},ev("HasVac")}
+
+    {{id("vac"),outEv("HasVac")},{id("ctl"),inEv("HasVac")}} 
+
+red sysMap(id("pnp-vc-t"))[id("vac")] == sysMap(id("pnp-vc-t"))[id("ctl")] .
+
+
+   ceq checkPort(tdevId,emsgs,links,idmap) = emsgs
+     (if idmap[fbId] == idmap[fbId0] then none else emsgs fi)
+   if {{fbId,in},ev} := emsgs
+   /\ {{fbId0,out},{fbId,in}} links0 := links .
+
+   eq checkPort(tdevId,emsgs,links,idmap) = emsgs [owise] .
+ 
+red checkPort(id("d1"),{{id("ctl"),inEv("HasVac")},ev("HasVac")}, appLinks(id("pnp")),sysMap(id("pnp-vc-t"))) .

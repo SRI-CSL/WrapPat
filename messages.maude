@@ -1,0 +1,74 @@
+fmod MESSAGES is 
+  inc PORT .
+  inc EVENTS .
+  
+  vars srcPort port tgtPort  : Port .
+  vars id  : Id .
+  vars ev ev1 : Event .
+  vars msgs msgs0 msgs1 : Msgs .
+  var msg : Msg .
+  
+  sorts PMsg Msg Msgs .
+  subsort PMsg < Msg .
+  subsort Msg < Msgs .
+  op none : -> Msgs .
+  op __ : Msgs Msgs -> Msgs [comm assoc id: none] .
+  op {_,_,_} : Port Port Event -> PMsg . 
+
+  op getSrcPort : Msg -> Port .
+  eq getSrcPort({srcPort,tgtPort,ev}) = srcPort .
+
+  op getTgtPort : Msg -> Port .
+  eq getTgtPort({srcPort,tgtPort,ev}) = tgtPort .
+
+  op getEv : Msg -> Event .
+  eq getEv({srcPort,tgtPort,ev}) = ev .
+
+  op size : Msgs -> Nat .
+  eq size(msg msgs) = s(size(msgs)) .
+  eq size((none).Msgs) = 0 .
+
+endfm
+
+
+fmod SIGNED-MESSAGES is
+  inc MESSAGES .
+
+  var pmsg : PMsg .
+  var id : Id .
+  vars portSrc portTar : Port .
+  var ev : Event .
+  vars msgs msgs0 : Msgs .
+  var msg : Msg .
+
+  sort SignedMsg . 
+  subsort SignedMsg < Msg .
+  op sg : Event Id -> Event .
+
+  op signMsg : PMsg Id -> Msg .
+  eq signMsg({portSrc,portTar,ev},id) 
+   = {portSrc,portTar,sg(ev,id)} .
+
+  op unsign : Event -> Event .
+  eq unsign(sg(ev,id))  = unsign(ev) .
+  eq unsign(ev) = ev [owise] .
+
+  op isSigned : Event Id -> Bool .
+  eq isSigned(sg(ev,id),id) = true .
+  eq isSigned(ev,id) = false [owise] .
+
+***(
+  op isSigned : Msg -> Bool .
+  eq isSigned({portSrc,portTar,sg(ev,id)}) = true .
+  eq isSigned(msg) = false [owise] .
+
+  op getSigned : Msgs Msgs -> Msgs .
+  eq getSigned(none,msgs) = msgs .
+  eq getSigned(msg msgs,msgs0) 
+    = if isSigned(msg) then 
+       getSigned(msgs,msg msgs0) 
+      else getSigned(msgs,msgs0) fi .
+)
+
+endfm 
+

@@ -1,0 +1,47 @@
+***(
+
+ctl
+       start        atR          HasVac        
+   init ----> LOff -------> ROff ------->  ROn 
+        goR    ^    VacOn         goL       |   
+                \                           |
+                 \    NoVac         atL     |
+                    <------- LOn  <------- <
+                       goR          VacOff  
+ 
+ctlx -- pauses at each round
+     start        atR          HasVac        
+ready ----> LOff -------> ROff ------->  ROn 
+  ^   goR         VacOn         goL       |   
+   \                                      |
+    \            NoVac         atL        |
+      <------- <------- LOn  <---------- <
+                 ready          VacOff  
+ 
+
+coord
+         start         ready from ctlx_i
+   init -----------> inCycle -------->    init
+   start to ctlx_i           start
+
+NB if all branches don't send read in the same phase
+the application will halt in a dead state.
+
+More forgiving
+
+all lines ready -- as above
+                      ready
+all but 1  ---> wait1 -----> init
+                      start
+
+                      readyx2
+all but 2  ---> wait2 -----> init
+                      start
+                      ready
+                      -----> wait1
+.....
+
+intruder can cause a slow pnp to loose its start by sending
+causing coord to send prematurely
+maybe cause pnp delay to put in late state                      
+)

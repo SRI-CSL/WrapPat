@@ -1,0 +1,293 @@
+***(
+fb.maude  requires basics
+
+fmod EVENTS is inc STRING .
+fmod IO is inc STRING .  inEv outEv IO
+fmod PORT is inc ID .  inc IO .
+    port ~   {id,io} {id,port}
+fmod COND is  inc EVENTS .  inc IO .
+  op _is_ : InEv Event -> Cond . 
+  cond bop cond 
+  NNF  |=
+fmod EFFECTS is inc IO . inc EVENTS .
+op _:~_ : IO Event -> IOEff . 
+fmod TRANSITION is inc COND . inc EFFECTS .
+  State, Transition tr(st,st,cond,outeffs)
+fmod FB is inc ID . inc TRANSITION .  inc MYATTRS .
+  op [_:FB|_] : Id MyAttrs -> FB [ctor] . 
+  state iEvEffs oEvEffs ticked
+  FB globals
+)
+
+*** the basic signals
+fmod EVENTS is 
+  inc STRING .
+
+ var ev : Event .
+ var evs : Events .
+ 
+ sort Event Events .
+ subsort Event < Events .
+
+ **** Set of events.
+ op none : -> Events .
+ op __ : Events Events -> Events [comm assoc id: none] .
+
+ op allEvents : -> Events . 
+ 
+ op ev : String -> Event .
+
+ op mem : Event Events -> Bool .
+ eq mem(ev,ev evs) = true .
+ eq mem(ev,evs) = false [owise] .
+
+endfm
+
+
+fmod IO is
+  inc STRING .
+  
+ sorts InEv OutEv Ins Outs IO EmptyIOs IOs .
+ subsort InEv OutEv < IO .
+ subsort InEv < Ins .
+ subsort OutEv < Outs .
+ subsort IO < IOs .
+ subsort Ins < IOs .
+ subsort Outs < IOs .
+ subsort EmptyIOs < Ins .
+ subsort EmptyIOs < Outs .
+ op none :  -> EmptyIOs .
+ op __ : IOs IOs -> IOs [ctor assoc comm id: none] .
+ op __ : Ins Ins -> Ins [ctor ditto] .
+ op __ : Outs Outs -> Outs [ctor ditto] .
+ op __ : EmptyIOs EmptyIOs -> EmptyIOs [ctor ditto] .
+ 
+  op inEv : String -> InEv .
+  op outEv : String -> OutEv .
+
+endfm
+
+ fmod PORT is
+  inc ID .
+  inc IO .
+  
+  vars id id0 id1 : Id .
+  var ids : Ids .
+  var out : OutEv .
+  var in : InEv .
+  var io : IO .
+  var port : Port .
+  
+  sort Port Ports .
+  subsort Port < Ports .
+  op none : -> Ports .
+  op __ : Ports Ports -> Ports [comm assoc id: none] . 
+  op {_,_} : Id IO -> Port .
+  op {_,_} : Id Port -> Port .
+
+  op portIO : Port -> IO .
+  eq portIO({id,io}) = io .
+  eq portIO({id,port}) = portIO(port) .
+  op idOf : Port -> Id .
+  eq idOf({id,io}) = id .
+  eq idOf({id,port}) = id .
+
+  op isOutPort : Id Port -> Bool .
+  eq isOutPort(id,port)   = 
+    (idOf(port) == id) and (portIO(port) :: OutEv) .
+
+  sort Link Links .
+  subsort Link < Links .
+  op none : -> Links .
+  op __ : Links Links -> Links [comm assoc id: none] . 
+  op {_,_} : Port Port -> Link .
+
+endfm
+
+fmod EFFECTS is 
+  inc IO .
+  inc EVENTS .
+
+  var ev : Event .
+  var evs : Events .
+  var outEv : OutEv .
+  var outEff : OutEvEff .
+  var outEffs : OutEvEffs .
+
+  sort InEvEff OutEvEff InEvEffs OutEvEffs  
+      IOEff EmptyIOEffs .
+
+  subsort InEvEff < InEvEffs .
+  subsort InEvEff OutEvEff < IOEff .
+  subsort EmptyIOEffs < InEvEffs .
+  subsort EmptyIOEffs < OutEvEffs .
+  op none :  -> EmptyIOEffs .
+  op __ : InEvEffs InEvEffs -> InEvEffs [assoc comm id: none] .
+  subsort OutEvEff < OutEvEffs .
+  op __ : OutEvEffs OutEvEffs -> OutEvEffs [assoc comm id: none] .
+  op __ : EmptyIOEffs EmptyIOEffs -> EmptyIOEffs [ditto] .
+  op _:~_ : IO Event -> IOEff . 
+  op _:~_ : InEv Event -> InEvEff . 
+  op _:~_ : OutEv Event -> OutEvEff . 
+
+  op getEv : OutEvEff -> Event .
+  eq getEv(outEv :~ ev) = ev .
+  op getEvs : OutEvEffs Events -> Events .
+  eq getEvs(outEff outEffs,evs) 
+   = getEvs(outEffs,getEv(outEff) evs).
+  eq getEvs(none,evs) = evs .
+
+endfm 
+
+fmod COND is 
+  inc EVENTS . 
+  inc IO .
+  inc EFFECTS .
+
+  vars cond1 cond2 cond : Cond .
+  var inEvEffs : InEvEffs .
+  var in : InEv .
+  var ev : Event .
+  sort Cond   .
+
+  ops tt ff : ->  Cond .
+  op _and_ : Cond Cond -> Cond [assoc comm] .
+  op _or_ : Cond Cond -> Cond [assoc comm] .
+  op not_ : Cond -> Cond .
+  op _is_ : InEv Event -> Cond . 
+
+  op toNNF : Cond -> Cond .
+  eq toNNF(tt) = tt .
+  eq toNNF(not tt) = ff .
+  eq toNNF(ff) = ff .
+  eq toNNF(not ff) = tt .
+  eq toNNF(in:InEv is ev:Event) = in:InEv is ev:Event .
+  eq toNNF(not (in:InEv is ev:Event)) = not (in:InEv is ev:Event) .
+  eq toNNF(cond1 and cond2) = toNNF(cond1) and toNNF(cond2) .
+  eq toNNF(cond1 or cond2) = toNNF(cond1) or toNNF(cond2) .
+  eq toNNF(not (cond1 and cond2)) 
+   = toNNF(not cond1) or toNNF(not cond2) .
+  eq toNNF(not (not cond)) = toNNF(cond) .
+
+
+op _|=_ : InEvEffs Cond -> Bool .
+eq inEvEffs |= (cond1 and cond2) 
+ = (inEvEffs |= cond1) and (inEvEffs |= cond2) . 
+eq inEvEffs |= (cond1 or cond2) 
+ = (inEvEffs |= cond1) or (inEvEffs |= cond2) . 
+eq inEvEffs |= not(cond) 
+ = not (inEvEffs |= cond) . 
+eq (in :~ ev) inEvEffs |= in is ev = true .
+eq (in :~ ev) inEvEffs |= tt = true .
+eq inEvEffs |= cond = false [owise] .
+
+endfm
+
+
+fmod TRANSITION is 
+  inc COND .
+  inc EFFECTS .
+
+vars trs trs0 : Trs .
+var tr : Tr .
+vars st1 st2 st : State .
+var cond : Cond .
+var effs : OutEvEffs .
+
+sort State States .
+subsort State < States .
+op none :  -> States .
+op __ : States States -> States 
+         [ctor assoc comm id: none] .
+
+sort Tr Trs .
+subsort Tr < Trs .
+op none : -> Trs .
+op __ : Trs Trs -> Trs [ctor comm assoc id: none] .
+op tr : State State Cond OutEvEffs -> Tr [ctor] . 
+
+op getCond : Tr -> Cond .
+eq getCond(tr(st1,st2,cond,effs)) = cond .
+op getPreState : Tr -> State .
+eq getPreState(tr(st1,st2,cond,effs)) = st1 .
+op getPostState : Tr -> State .
+eq getPostState(tr(st1,st2,cond,effs)) = st2 .
+op getTrOutEvs : Tr -> OutEvEffs .
+eq getTrOutEvs(tr(st1,st2,cond,effs)) = effs .
+
+op st : String -> State [ctor] .
+
+op filterTrs : Trs State Trs -> Trs .
+eq filterTrs(tr trs,st,trs0) 
+ = if getPreState(tr) == st then 
+   filterTrs(trs,st,tr trs0)
+   else filterTrs(trs,st,trs0) fi .
+eq filterTrs(none,st,trs0) = trs0 .
+
+endfm
+
+
+fmod FB is 
+  inc ID .
+  inc TRANSITION .
+  inc MYATTRS .
+
+  var id : Id .
+  var cid : Cid .
+  var fbCid : FbC .
+  var ev : Event .
+  var evs : Events .
+  var st : State .
+  var inEvs : InEvEffs .
+  var outEvs : OutEvEffs .
+  var tr : Tr .
+  var trs : Trs .
+  var attrs : MyAttrs .
+
+sort FB  FBs .
+subsort FB < FBs .
+op none : -> FBs .
+op __ : FBs FBs -> FBs [ctor comm assoc id: none] . 
+
+op [_:_|_] : Id FbC MyAttrs -> FB [ctor] . 
+
+  op state`:_ : State -> MyAttr [ctor] .
+  op iEvEffs`:_ : InEvEffs -> MyAttr [ctor] .
+  op oEvEffs`:_ : OutEvEffs -> MyAttr [ctor] .
+  op ticked`:_ : Bool -> MyAttr [ctor] .
+****  op appIns`:_ : Ins -> MyAttr [ctor] .
+
+
+**** Has to be provided by the scenario
+op insFB : FbC -> Ins .
+op outsFB : FbC -> Outs .
+op trsFB : FbC -> Trs .
+op stsFB : FbC -> States .
+op trsFB : FbC State -> Trs .
+eq trsFB(cid:FbC,st) = filterTrs(trsFB(cid:FbC),st,none) .
+
+op idOf : FB -> Id .
+eq idOf([id : fbCid | attrs]) = id .
+op cidOf : FB -> FbC .
+eq cidOf([id : cid:FbC | attrs]) = cid:FbC .
+op getState : FB -> State .
+eq getState([id : fbCid | (state : st) ; attrs]) = st .
+
+
+op getSentEvs : FbC -> Events .
+op getSentEvs : Trs Events -> Events .
+
+eq getSentEvs(cid:FbC) = getSentEvs(trsFB(cid:FbC),none) .
+eq getSentEvs(tr trs,evs) 
+  =  getSentEvs(trs,getEvs(getTrOutEvs(tr),none) evs) .
+eq getSentEvs(none,evs) = evs .
+
+endfm
+
+***(
+symbolic transitions
+   /\ csssevs := fbCSetSet(trs,bijs,none)
+
+
+)
+

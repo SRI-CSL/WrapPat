@@ -1,0 +1,77 @@
+
+***(
+*** Messages that are in the policy, but are either not signed
+*** or signed with the wrong id, do not satisfy the iPolicy.
+op satIPolicy : Id Msgs iPolicy -> Bool .
+ceq satIPolicy(idDev,pmsg msgs,[i : in,id] iPol) = false
+ if tarInEv(pmsg) == in
+ /\ not isSigned(getEv(pmsg),id) .
+eq satIPolicy(idDev,msgs,iPol) = true [owise] .
+)
+
+fmod WRAP-SYSTEM is
+ inc APPLICATION .
+ inc SYSTEM .
+ inc POLICY .
+ inc SIGNED-MESSAGES .
+
+ vars fbId fbId0 devId1 devId devId0 sysId appId : Id .
+ var dev : Application .
+ vars devs devs1 : Apps .
+ var idmap : Map{Id,Id} .
+ var links links0 : Links .
+ var attrs : MyAttrs .
+ var emsgs : EMsgs .
+ var in : InEv .
+ var out : OutEv .
+ var ev : Event .
+ vars ipol ipol1 : iPolicy .
+ vars opol opol1 : oPolicy .
+
+ op wrap-sys : System EMsgs -> System .
+ op wrap-devs : Apps EMsgs Links Map{Id,Id} Apps -> Apps . 
+ op wrap-dev : Application EMsgs Links Map{Id,Id} 
+               iPolicy oPolicy -> Application . 
+ 
+ ceq wrap-sys([sysId | appId | devs : devs ; attrs ],emsgs)
+            = [sysId | appId | devs : devs1 ; attrs ]
+  if devs1 :=
+      wrap-devs(devs,emsgs,appLinks(appId),sysMap(sysId), 
+                none) .
+
+      
+  eq wrap-devs(none,emsgs,links,idmap, devs1) = devs1 .
+
+  eq wrap-devs(dev devs,emsgs,links,idmap, devs1) =
+   wrap-devs(devs,emsgs,links,idmap, devs1
+              wrap-dev(dev,emsgs,links,idmap,none, none)) . 
+
+  eq wrap-dev(dev,emsgs,links,idmap,ipol,opol) =
+      addAttr(dev,(iPol : ipol ; oPol : opol)) [owise] .
+ 
+**** bad messages are captured at delivery point -- in mode
+  ceq wrap-dev(dev,{{fbId,in},ev} emsgs,links,idmap, 
+               ipol,opol)
+    = wrap-dev(dev,emsgs,links,idmap,
+               (ipol ipol1), (opol opol1))
+  if {{fbId0,out},{fbId,in}} links0 := links
+  /\ devId1 := idmap[fbId]
+  /\ devId0 := idmap[fbId0]
+  /\ devId := getId(dev) 
+  **** if emsg sent from dev add opol to sign outgoing
+  /\ opol1 := (if devId == devId0 
+               then [o : fbId0 ; out ]
+               else none
+               fi)
+  **** if emsg rcvd by dev, require signed by sender devId0
+  /\ ipol1 := (if devId == devId1
+               then [i : fbId ; in, devId0]
+               else none
+               fi) . 
+
+
+***(
+  op [o`:_;_] : Id Out -> oFact .  ---  {fbId,out}
+  op [i`:_;_,_] : Id In Id -> iFact .  --- {fbId,in}, devId
+) 
+endfm

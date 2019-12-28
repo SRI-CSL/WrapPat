@@ -1,0 +1,254 @@
+select PNP-SCENARIO-DEPLOYED .
+
+red pnpD1-1Init(msgStart) .
+rew [5] pnpD1-1Init(msgStart) .
+rew [5] pnpDInitI(pnpD1-1Init(msgStart),none) .
+
+rewrite [50] in PNP-SCENARIO-DEPLOYED : pnpD1-1Init(msgStart) .
+
+
+sys-deliver: iMsgs = {{id("d0"),{id("fb0"),outEv("start")}},{id("d1"),{id(
+    "ctl"),inEv("start")}},ev("start")}
+
+app-exe1: iMsgs0 = {{id("ctl"),inEv("start")},ev("start")}
+
+app-exe2: tick = true
+  id = id("d1")
+  emsgs0 = {{id("track"),inEv("GoR")},ev("GoR")}
+
+app-exe2: tick = true
+  id = id("d2")
+  emsgs0 = (none).EMsgs
+
+app-exe2: tick = true
+  id = id("d3")
+  emsgs0 = (none).EMsgs
+
+sys-collect: imsgs1 = {{id("d1"),{id("ctl"),outEv("GoR")}},{id("d3"),{id(
+    "track"),inEv("GoR")}},ev("GoR")}
+    omsgs1 = (none).Msgs
+
+sys-deliver: iMsgs = {{id("d1"),{id("ctl"),outEv("GoR")}},{id("d3"),{id(
+    "track"),inEv("GoR")}},ev("GoR")}
+
+app-exe2: tick = true
+  id = id("d1")
+  emsgs0 = (none).EMsgs
+
+app-exe2: tick = true
+  id = id("d2")
+  emsgs0 = (none).EMsgs
+
+app-exe1: iMsgs0 = {{id("track"),inEv("GoR")},ev("GoR")}
+
+app-exe2: tick = true
+  id = id("d3")
+  emsgs0 = {{id("track"),inEv("GoR1")},ev("GoR1")}
+
+sys-collect: imsgs1 = (none).Msgs
+    omsgs1 = (none).Msgs
+
+app-exe2: tick = true
+  id = id("d1")
+  emsgs0 = (none).EMsgs
+
+app-exe2: tick = true
+  id = id("d2")
+  emsgs0 = (none).EMsgs
+
+app-exe1: iMsgs0 = {{id("track"),inEv("GoR1")},ev("GoR1")}
+
+app-exe2: tick = true
+  id = id("d3")
+  emsgs0 = {{id("ctl"),inEv("atR")},ev("atR")}
+
+sys-collect: imsgs1 = {{id("d3"),{id("track"),outEv("atR")}},{id("d1"),{id(
+    "ctl"),inEv("atR")}},ev("atR")}
+    omsgs1 = (none).Msgs
+
+sys-deliver: iMsgs = {{id("d3"),{id("track"),outEv("atR")}},{id("d1"),{id(
+    "ctl"),inEv("atR")}},ev("atR")}
+
+app-exe1: iMsgs0 = {{id("ctl"),inEv("atR")},ev("atR")}
+
+app-exe2: tick = true
+  id = id("d1")
+  emsgs0 = {{id("vac"),inEv("VacOn")},ev("VacOn")}
+
+app-exe2: tick = true
+  id = id("d2")
+  emsgs0 = (none).EMsgs
+
+app-exe2: tick = true
+  id = id("d3")
+  emsgs0 = (none).EMsgs
+
+sys-collect: imsgs1 = {{id("d1"),{id("ctl"),outEv("VacOn")}},{id("d2"),{id(
+    "vac"),inEv("VacOn")}},ev("VacOn")}
+    omsgs1 = (none).Msgs
+
+sys-deliver: iMsgs = {{id("d1"),{id("ctl"),outEv("VacOn")}},{id("d2"),{id(
+    "vac"),inEv("VacOn")}},ev("VacOn")}
+
+app-exe2: tick = true
+  id = id("d1")
+  emsgs0 = (none).EMsgs
+
+app-exe1: iMsgs0 = {{id("vac"),inEv("VacOn")},ev("VacOn")}
+
+app-exe2: tick = true
+  id = id("d2")
+  emsgs0 = {{id("ctl"),inEv("HasVac")},ev("HasVac")}
+
+app-exe2: tick = true
+  id = id("d3")
+  emsgs0 = (none).EMsgs
+
+sys-collect: imsgs1 = {{id("d2"),{id("vac"),outEv("HasVac")}},{id("d1"),{id(
+    "ctl"),inEv("HasVac")}},ev("HasVac")}
+    omsgs1 = (none).Msgs
+
+sys-deliver: iMsgs = {{id("d2"),{id("vac"),outEv("HasVac")}},{id("d1"),{id(
+    "ctl"),inEv("HasVac")}},ev("HasVac")}
+
+app-exe1: iMsgs0 = {{id("ctl"),inEv("HasVac")},ev("HasVac")}
+
+app-exe2: tick = true
+  id = id("d1")
+  emsgs0 = {{id("track"),inEv("GoL")},ev("GoL")}
+
+app-exe2: tick = true
+  id = id("d2")
+  emsgs0 = (none).EMsgs
+
+app-exe2: tick = true
+  id = id("d3")
+  emsgs0 = (none).EMsgs
+
+sys-collect: imsgs1 = {{id("d1"),{id("ctl"),outEv("GoL")}},{id("d3"),{id(
+    "track"),inEv("GoL")}},ev("GoL")}
+    omsgs1 = (none).Msgs
+
+sys-deliver: iMsgs = {{id("d1"),{id("ctl"),outEv("GoL")}},{id("d3"),{id(
+    "track"),inEv("GoL")}},ev("GoL")}
+
+app-exe2: tick = true
+  id = id("d1")
+  emsgs0 = (none).EMsgs
+
+app-exe2: tick = true
+  id = id("d2")
+  emsgs0 = (none).EMsgs
+
+app-exe1: iMsgs0 = {{id("track"),inEv("GoL")},ev("GoL")}
+
+app-exe2: tick = true
+  id = id("d3")
+  emsgs0 = {{id("track"),inEv("GoL1")},ev("GoL1")}
+
+sys-collect: imsgs1 = (none).Msgs
+    omsgs1 = (none).Msgs
+
+app-exe2: tick = true
+  id = id("d1")
+  emsgs0 = (none).EMsgs
+
+app-exe2: tick = true
+  id = id("d2")
+  emsgs0 = (none).EMsgs
+
+app-exe1: iMsgs0 = {{id("track"),inEv("GoL1")},ev("GoL1")}
+
+app-exe2: tick = true
+  id = id("d3")
+  emsgs0 = {{id("ctl"),inEv("atL")},ev("atL")}
+
+sys-collect: imsgs1 = {{id("d3"),{id("track"),outEv("atL")}},{id("d1"),{id(
+    "ctl"),inEv("atL")}},ev("atL")}
+    omsgs1 = (none).Msgs
+
+sys-deliver: iMsgs = {{id("d3"),{id("track"),outEv("atL")}},{id("d1"),{id(
+    "ctl"),inEv("atL")}},ev("atL")}
+
+app-exe1: iMsgs0 = {{id("ctl"),inEv("atL")},ev("atL")}
+
+app-exe2: tick = true
+  id = id("d1")
+  emsgs0 = {{id("vac"),inEv("VacOff")},ev("VacOff")}
+
+app-exe2: tick = true
+  id = id("d2")
+  emsgs0 = (none).EMsgs
+rewrites: 2769 in 9ms cpu (10ms real) (295139 rewrites/second)
+result System: [id("pnp1-1") | id("pnp") | devs : ([id("d1") | ticked : true ;
+fbs : [id("ctl") : ctl | state : st("LOn") ;
+iEvEffs : none ;
+oEvEffs : none ;
+ticked : true] ;
+iEMsgs : {{id("vac"),inEv("VacOff")},ev("VacOff")} ;
+oEMsgs : none ;
+ssbs : none] [id("d2") | ticked : true ;
+fbs : [id("vac") : vac | state : st("on") ;
+iEvEffs : none ;
+oEvEffs : none ;
+ticked : true] ;
+iEMsgs : none ;
+oEMsgs : none ;
+ssbs : none] [id("d3") | ticked : false ;
+fbs : [id("track") : track | state : st("L") ;
+iEvEffs : none ;
+oEvEffs : none ;
+ticked : false] ;
+iEMsgs : none ;
+oEMsgs : none ;
+ssbs : none]) ;
+iMsgs : none ;
+oMsgs : none]
+
+***************************
+set print attribute off .
+
+search [1] pnpDInitI(pnpD1-1Init(msgStart),none) =>+  sysI:SysIntruder such that badState(sysI:SysIntruder) .
+
+No Solution 225 states
+
+
+********** concrete intruder messages
+{{id("ctl"),inEv("HasVac")},ev("HasVac")}  id("d1")
+{{id("ctl"),inEv("atL")},ev("atL")}         {{id("track"),inEv("GoL")},ev("GoL")}       id("d3")
+{{id("vac"),inEv("VacOff")},ev("VacOff")}  id("d2")
+
+ops badHasVac badatL badGoL badVacOff : -> Msg .
+
+{{id("d2"),{id("vac"),outEv("HasVac")}}, 
+ {id("d1"),{id("ctl"),inEv("HasVac")}}, ev("HasVac")}
+
+{{id("d3"),{id("track"),outEv("atL")}}, 
+ {id("d1"),{id("ctl"),inEv("atL")}}, ev("atL")}
+
+{{id("d1"),{id("ctl"),outEv("GoL")}},
+ {id("d3"),{id("track"), inEv("GoL")}}, ev("GoL")}
+
+{{id("d1"),{id("ctl"),outEv("VacOff")}}, 
+ {id("d2"),{id("vac"),inEv("VacOff")}}, ev("VacOff")}
+----------------------
+set print attribute on .
+
+rew [5] pnpDInitI(pnpD1-1Init(msgStart),badatL) .
+
+----------------------
+set print attribute off .
+
+search [1] pnpDInitI(pnpD1-1Init(msgStart),badatL) =>+  sysI:SysIntruder such that badState(sysI:SysIntruder) .
+Solution 1 (state 668)
+Solution 4 (state 700)
+
+search [1] pnpDInitI(pnpD1-1Init(msgStart),badGoL) =>+  sysI:SysIntruder such that badState(sysI:SysIntruder) .
+Solution 1 (state 190)
+Solution 86 (state 841)
+
+search  pnpDInitI(pnpD1-1Init(msgStart),badVacOff) =>+  sysI:SysIntruder such that badState(sysI:SysIntruder) .
+Solution 31 (state 735)
+
+search  pnpDInitI(pnpD1-1Init(msgStart),badHasVac) =>+  sysI:SysIntruder such that badState(sysI:SysIntruder) .
+Solution 28 (state 684)

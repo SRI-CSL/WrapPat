@@ -1,0 +1,106 @@
+mod TRACE2ATTACKS is
+inc META-LEVEL .
+inc APP-EXE .
+ 
+ var mname : Qid .
+ var module : Module .
+ vars sres?? : [Trace?] .
+ vars sres2?? : [ResultTriple?] .
+ vars appIntT tr : Term .
+ vars app0 app1 : Application .
+ var appIntL appIntL0  : AppIntList .
+ var appInt : AppIntruder .
+ var n : Nat .
+ var ty : Type .
+ var r : Rule .
+ var trace : Trace .
+ var str : String .
+ vars emsgs0 emsgs1 emsgs : EMsgs .
+ var emsg0 emsg1 emsg : EMsg .
+ var ssbs : SSBs .
+ var emSet : EMsgsSet .
+
+*** AppIntruder trace
+sort AppIntList .
+subsort AppIntruder < AppIntList .
+op nil : -> AppIntList [ctor] .
+op _;_ : AppIntList AppIntList 
+            -> AppIntList [ctor assoc id: nil] .
+
+sort EMsgsSet .
+op none : -> EMsgsSet .
+op {_} : EMsgs -> EMsgsSet [ctor] .
+op __ : EMsgsSet EMsgsSet -> EMsgsSet [ctor comm assoc id: none] .
+
+op mtAppInt : -> AppIntruder [ctor] .
+
+op getBadEvents :  Qid AppIntruder -> EMsgsSet .
+op getBadEvents$ :  Module Term Nat EMsgsSet -> EMsgsSet .
+
+eq getBadEvents(mname,appInt) = 
+  removeDup(
+      getBadEvents$([mname],upTerm(appInt),0,none)) .
+
+ceq getBadEvents$(module,appIntT,n,emSet) 
+ = getBadEvents$(module,appIntT,s n,{emsgs0} emSet)
+ if appIntL := toAppIntList$(module,appIntT,n) 
+ /\ not (appIntL == mtAppInt)
+ /\ emsgs0 := getEmsgIs(appIntL,none) .
+
+ eq getBadEvents$(module,appIntT,n,emSet) = emSet [owise] .
+
+op removeDup : EMsgsSet  -> EMsgsSet .
+eq removeDup({emsgs0} {emsgs0} emSet) 
+ = removeDup({emsgs0} emSet) .
+eq removeDup(emSet) = emSet [owise] .
+
+
+*** module, initialConf and search index
+op toAppIntList$ : Module Term Nat -> AppIntList .
+ceq toAppIntList$(module,appIntT,n) 
+  =  appIntL ; appInt
+  if sres?? := 
+      metaSearchPath(module,appIntT,'a:AppIntruder,
+                     'badState['a:AppIntruder] = 'true.Bool, 
+                     '+,unbounded,n) 
+  /\ appIntL := if sres?? :: Trace then 
+              toAppIntList$$(sres??,nil) else nil fi
+  *** Need to search again to 
+  *** get the last configuration              
+  /\ sres2?? :=  
+       metaSearch(module,appIntT,'a:AppIntruder,
+                 'badState['a:AppIntruder] = 'true.Bool, 
+                 '+,unbounded,n)
+  /\ appInt := if sres2?? :: ResultTriple 
+     then downTerm(getTerm(sres2??),mtAppInt) 
+     else mtAppInt fi .
+
+op toAppIntList$$ : Trace AppIntList -> AppIntList .
+eq toAppIntList$$({tr,ty,r} trace, appIntL)
+ = toAppIntList$$(trace, appIntL ; downTerm(tr,mtAppInt)) .
+eq toAppIntList$$(nil,appIntL) = appIntL .
+
+op getEmsgIs : AppIntList EMsgs -> EMsgs .
+eq getEmsgIs([app0,emsg0 emsgs0] ; [app1,emsgs0] ; appIntL, emsgs1) = 
+  getEmsgIs([app1,emsgs0] ; appIntL, emsg0 emsgs1) .
+
+eq getEmsgIs([app0,emsgs0] ; [app1,emsgs0] ; appIntL, emsgs1) = 
+  getEmsgIs([app1,emsgs0] ; appIntL, emsgs1) .
+
+eq getEmsgIs([app1, emsgs0],emsgs1) = 
+      getDelivered(emsgs1,getSSB(app1),none) .
+
+**** an injected message is only delivered if it grounded by ssbs
+op getDelivered : EMsgs SSBs EMsgs -> EMsgs  .
+ceq getDelivered(emsg emsgs1,ssbs,emsgs0) =
+     getDelivered(emsgs1,ssbs,emsgs emsgs0) 
+  if emsg1 := emsg[ssbs]
+  /\ emsgs := (if (emsg == emsg1)
+            then none
+            else emsg1
+            fi
+           ) .
+           
+eq getDelivered(none,ssbs,emsgs0) = emsgs0 .
+
+endm

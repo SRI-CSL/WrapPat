@@ -1,0 +1,31 @@
+fmod POLICY is
+  inc PORT .
+  
+  var out : OutEv .
+  var oPol : oPolicy .
+  var in : InEv .
+  var id fbId : Id .
+
+  sorts iPolicy oPolicy iFact oFact .
+  subsort iFact < iPolicy .
+  subsort oFact < oPolicy .
+  op none : -> iPolicy .
+  op __ : iPolicy iPolicy -> iPolicy [comm assoc id: none] . 
+  op none : -> oPolicy .
+  op __ : oPolicy oPolicy -> oPolicy [comm assoc id: none] . 
+  op [o`:_;_] : Id OutEv -> oFact .  ---  {fbId,out}
+  op [i`:_;_,_] : Id InEv Id -> iFact .  --- {fbId,in}, devId
+
+***(
+  op getFbId : iFact -> Id .
+  op getIn : iFact -> InEv .
+  op getDevId : iFact -> Id .
+
+  eq getFbId([o : fbId ; out]) = fbId .
+  eq getOut([o : fbId ; out]) = out .
+
+  op inOPol : Id Out oPolicy -> Bool .
+  eq inOPol(out,[o : fbId ; out] oPol) = true .
+  eq inOPol(out,oPol) = false [owise] .
+)
+endfm

@@ -1,0 +1,155 @@
+select PNP-SCENARIO .
+
+rew [15] pnpInit(emsgStart) .
+result Application: [id("pnp") | 
+fbs : (
+[id("ctl") : ctl | state : st("ROn") ; iEvEffs : none ; 
+                   oEvEffs : none ; ticked : false] 
+[id("track") : track | state : st("L") ; iEvEffs : none ; 
+      oEvEffs : (outEv("atL") :~ ev("atL")) ; ticked : true] 
+[id("vac") : vac | state : st("on") ; iEvEffs : none ;
+                   oEvEffs : none ; ticked : false]) ;
+iEMsgs : none ;
+oEMsgs : none ;
+ssbs : none]
+
+rew [10] pnpInit(emsgI) .
+result Application: [id("pnp") | fbs : 
+([id("ctl") : ctl | state : st("ROff") ; iEvEffs : none ;
+                    oEvEffs : none ; ticked : false] 
+[id("track") : track | state : st("R") ; iEvEffs : none ;
+                   oEvEffs : none ; ticked : false] 
+[id("vac") : vac | state : st("on") ; iEvEffs : none ;
+                   oEvEffs : none ;ticked : false]) ;
+iEMsgs : {{id("ctl"),inEv("HasVac")},ev("HasVac")} ;
+oEMsgs : none ;
+ssbs : ((sev(10, 3) :~ ev("start")) 
+        (sid(10, 1) :~ id("ctl")) 
+        sin(10, 2) :~  inEv("start"))]
+ 
+rew [20] pnpInitI(pnpInit(emsgStart),emsgI) .
+result AppIntruder: [[id("pnp") | fbs : (
+[id("ctl") : ctl | state : st("LOn") ; iEvEffs : none ;
+                   oEvEffs : none ; ticked : false] 
+[id("track") : track | state : st("L") ; iEvEffs : none ;
+                       oEvEffs : none ; ticked : false] 
+[id("vac") : vac | state : st("off") ; iEvEffs : none ;
+                   oEvEffs : none ; ticked : false]) ;
+iEMsgs : {{id("ctl"),inEv("NoVac")},ev("NoVac")} ;
+oEMsgs : none ;
+ssbs : ((sev(10, 3) :~ ev("GoR")) 
+        (sid(10, 1) :~ id("track")) 
+        sin(10, 2) :~ inEv("GoR"))], none]
+
+search [1] pnpInitI(pnpInit(emsgStart),emsgI) =>+  appI:AppIntruder such that badState(appI:AppIntruder) .
+  
+ssbs : ((sev(10, 3) :~ ev("GoL")) (sid(10, 1) :~ id("track")) sin(10, 2) :~ inEv("GoL"))]
+
+search  pnpInitI(pnpInit(emsgStart),emsgI) =>+  appI:AppIntruder such that badState(appI:AppIntruder) .
+19 solutions (state 267)
+
+********** concrete intruder messages
+{{id("ctl"),inEv("HasVac")},ev("HasVac")}  
+{{id("ctl"),inEv("atL")},ev("atL")} {{id("track"),inEv("GoL")},ev("GoL")} 
+{{id("vac"),inEv("VacOff")},ev("VacOff")}
+
+search [1] pnpInitI(pnpInit(emsgStart),{{id("ctl"),inEv("hasVac")}, ev("hasVac")} ) =>+  appI:AppIntruder such that badState(appI:AppIntruder) .
+no solution
+
+search pnpInitI(pnpInit(emsgStart),{{id("ctl"),inEv("atL")},ev("atL")}) =>+  appI:AppIntruder such that badState(appI:AppIntruder) .
+1 solution state 62
+
+search pnpInitI(pnpInit(emsgStart),{{id("track"),inEv("GoL")},ev("GoL")}) =>+  appI:AppIntruder such that badState(appI:AppIntruder) .
+Solution 10 (state 69)
+
+search pnpInitI(pnpInit(emsgStart),{{id("vac"),inEv("VacOff")},ev("VacOff")}) =>+  appI:AppIntruder such that badState(appI:AppIntruder) .
+Solution 5 (state 63)
+
+search pnpInitI(pnpInit(emsgStart),{{id("ctl"),inEv("HasVac")},ev("HasVac")}) =>+  appI:AppIntruder such that badState(appI:AppIntruder) .
+Solution 3 (state 60)
+
+
+***** 2 Intruder msgs
+search [1] pnpInitI(pnpInit(emsgStart),emsgI emsgI1) =>+  appI:AppIntruder such that badState(appI:AppIntruder) .
+  
+appI:AppIntruder --> [[id("pnp") | fbs : ([id("ctl") : ctl | state : st("LOff")
+    ;
+iEvEffs : none ;
+oEvEffs : none ;
+ticked : false] [id("track") : track | state : st("mvL") ;
+iEvEffs : none ;
+oEvEffs : (outEv("GoL1") :~ ev("GoL1")) ;
+ticked : true] [id("vac") : vac | state : st("off") ;
+iEvEffs : none ;
+oEvEffs : none ;
+ticked : false]) ;
+iEMsgs : {{id("ctl"),inEv("atR")},ev("atR")} ;
+oEMsgs : none ;
+ssbs : ((sev(10, 3) :~ ev("GoR")) (sev(20, 3) :~ ev("GoL")) (sid(10, 1) :~ id(
+    "track")) (sid(20, 1) :~ id("track")) (sin(10, 2) :~ inEv("GoR")) sin(20,
+    2) :~ inEv("GoL"))],none]
+    
+607 solutions.
+
+**************  with print attribute on
+
+Maude> rew [15] pnpInit(emsgStart) .
+rewrite [15] in PNP-SCENARIO-DEPLOYED : pnpInit(emsgStart) .
+
+app-exe1: iMsgs0 = {{id("ctl"),inEv("start")},ev("start")}
+
+app-exe2: tick = false
+  id = id("pnp")
+  emsgs0 = {{id("track"),inEv("GoR")},ev("GoR")}
+
+app-exe1: iMsgs0 = {{id("track"),inEv("GoR")},ev("GoR")}
+
+app-exe2: tick = false
+  id = id("pnp")
+  emsgs0 = {{id("track"),inEv("GoR1")},ev("GoR1")}
+
+app-exe1: iMsgs0 = {{id("track"),inEv("GoR1")},ev("GoR1")}
+
+app-exe2: tick = false
+  id = id("pnp")
+  emsgs0 = {{id("ctl"),inEv("atR")},ev("atR")}
+
+app-exe1: iMsgs0 = {{id("ctl"),inEv("atR")},ev("atR")}
+
+app-exe2: tick = false
+  id = id("pnp")
+  emsgs0 = {{id("vac"),inEv("VacOn")},ev("VacOn")}
+
+app-exe1: iMsgs0 = {{id("vac"),inEv("VacOn")},ev("VacOn")}
+
+app-exe2: tick = false
+  id = id("pnp")
+  emsgs0 = {{id("ctl"),inEv("HasVac")},ev("HasVac")}
+
+app-exe1: iMsgs0 = {{id("ctl"),inEv("HasVac")},ev("HasVac")}
+
+app-exe2: tick = false
+  id = id("pnp")
+  emsgs0 = {{id("track"),inEv("GoL")},ev("GoL")}
+
+app-exe1: iMsgs0 = {{id("track"),inEv("GoL")},ev("GoL")}
+
+app-exe2: tick = false
+  id = id("pnp")
+  emsgs0 = {{id("track"),inEv("GoL1")},ev("GoL1")}
+
+app-exe1: iMsgs0 = {{id("track"),inEv("GoL1")},ev("GoL1")}
+rewrites: 1706 in 2ms cpu (3ms real) (611908 rewrites/second)
+result Application: [id("pnp") | fbs : ([id("ctl") : ctl | state : st("ROn") ;
+iEvEffs : none ;
+oEvEffs : none ;
+ticked : false] [id("track") : track | state : st("L") ;
+iEvEffs : none ;
+oEvEffs : (outEv("atL") :~ ev("atL")) ;
+ticked : true] [id("vac") : vac | state : st("on") ;
+iEvEffs : none ;
+oEvEffs : none ;
+ticked : false]) ;
+iEMsgs : none ;
+oEMsgs : none ;
+ssbs : none]    

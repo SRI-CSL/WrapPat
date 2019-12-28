@@ -1,0 +1,36 @@
+fmod EMESSAGES is 
+  inc PORT .
+  inc EVENTS .
+  
+  vars port : Port .
+  vars id  : Id .
+  vars ev ev1 : Event .
+  var in : InEv  .
+  var out : OutEv .
+  var emsg : EMsg .
+  vars emsgs emsgs0 emsgs1 : EMsgs .
+
+  sorts EMsg EMsgs .
+  subsort EMsg < EMsgs .
+  op none : -> EMsgs .
+  op __ : EMsgs EMsgs -> EMsgs [comm assoc id: none] .
+  op {_,_} : Port Event -> EMsg . 
+
+  op getPort : EMsg -> Port .
+  eq getPort({port,ev}) = port .
+
+  op getEv : EMsg -> Event .
+  eq getEv({port,ev}) = ev .
+
+***(
+  op setminus : EMsgs EMsgs -> EMsgs .
+  eq setminus(emsg emsgs0,emsg emsgs1) 
+   = setminus(emsgs0,emsg emsgs1) .
+  eq setminus(emsgs0,emsgs1) = emsgs0 [owise] .
+)
+  op size : EMsgs -> Nat .
+  eq size(emsg emsgs) = s(size(emsgs)) .
+  eq size((none).EMsgs) = 0 .
+
+
+endfm

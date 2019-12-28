@@ -1,0 +1,34 @@
+
+fmod ID is
+  inc STRING .
+
+  sort Id Ids .
+  subsort Id < Ids .
+  op noIds : -> Ids .
+  op __ : Ids Ids -> Ids [comm assoc id: noIds] . 
+  op id : String -> Id .
+
+  var id : Id .
+  var ids : Ids .
+  op mem : Id Ids -> Bool .
+  eq mem(id,id ids) = true .
+  eq mem(id,ids) = false [owise] .
+
+  sorts AppDev Cid .
+  subsort AppDev < Cid .
+  sorts AppC DevC .
+  subsort AppC DevC < AppDev .
+  sort FbC .
+  subsort FbC < Cid .  
+
+endfm
+
+
+fmod MYATTRS is
+
+  sorts MyAttr MyAttrs .
+  subsort MyAttr < MyAttrs .
+  op none : -> MyAttrs [ctor] .
+  op _;_ : MyAttrs MyAttrs -> MyAttrs  [ctor assoc comm id: none format (d d ni d)] .
+
+endfm

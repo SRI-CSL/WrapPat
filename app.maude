@@ -1,0 +1,265 @@
+fmod APPLICATION is
+  inc FB .
+  inc SYM-EMESSAGES .
+
+  vars appId fbId id : Id .
+  var fbC : FbC .
+  var ssbs : SSBs .
+  var fbs fbs1 : FBs .
+  var attrs attrs1 : MyAttrs .
+  var emsgs : EMsgs .
+  var b tick : Bool .
+  var app : Application .
+  
+**** GLOBALS set in scenario
+  op appFBs : Id -> Ids . **** computable
+  op appIns : Id -> Ins .
+  op appOuts : Id -> Outs .
+  op appLinks : Id -> Links .
+  
+  sort Application .
+  op [_|_] : Id  MyAttrs -> Application .
+  op fbs`:_ : FBs -> MyAttr .
+  op iEMsgs`:_ : EMsgs -> MyAttr .
+  op oEMsgs`:_ : EMsgs -> MyAttr .
+  op appLinks`:_ : Links -> MyAttr .
+  op ssbs`:_ : SSBs -> MyAttr .
+
+  op getId : Application -> Id .
+  eq getId([appId |  attrs]) = appId .
+  op getFBs : Application -> FBs .
+  eq getFBs([appId | fbs : fbs ; attrs]) = fbs .
+  op getSSB : Application -> SSBs .
+  eq getSSB([appId | ssbs : ssbs ; attrs]) = ssbs .
+  op getIEMsgs : Application -> EMsgs .
+  eq getIEMsgs([appId | iEMsgs : emsgs ; attrs]) = emsgs .
+
+  op updateFBs : Application FBs -> Application .
+  eq updateFBs([appId | fbs : fbs ; attrs], fbs1)
+     =  [appId | fbs : fbs1 ; attrs] .
+
+
+  sort AppIntruder .
+  op [_,_] : Application EMsgs -> AppIntruder .
+  op getApp : AppIntruder -> Application .
+  eq getApp([app:Application,emsgs]) = app:Application .
+
+  op mkApp : Id FBs EMsgs -> Application .
+  eq mkApp(appId,fbs,emsgs) =
+         [appId | fbs : fbs ; 
+         iEMsgs : emsgs ;
+         oEMsgs : none ;
+         ssbs : none 
+        ] .
+
+  op addAttr : Application MyAttrs -> Application .
+  eq addAttr([appId | attrs], attrs1) =
+          [appId | attrs ; attrs1] .
+
+  op setTicked : MyAttrs Bool -> MyAttrs .
+  eq setTicked(ticked : b ; attrs, tick) 
+        = (ticked : tick) ; attrs .
+  eq setTicked(attrs,tick) = attrs [owise]  .
+
+  op setTicked : Application Bool -> Application .
+  eq setTicked(app,b) 
+      = updateFBs(app,setTickedFBs(getFBs(app),none,b)) .
+   
+  op setTickedFBs : FBs  FBs Bool -> FBs .
+  eq setTickedFBs(none,fbs,b)  = fbs .
+  eq setTickedFBs([fbId : fbC | attrs ] fbs, fbs1,b) =
+      setTickedFBs(fbs,fbs1 
+                      [fbId : fbC | setTicked(attrs,b)],b) .
+  
+  
+  op getTicked :  MyAttrs -> Bool .
+  eq getTicked(ticked : b ; attrs) = b .
+  eq getTicked(attrs) = false [owise] .  
+
+
+  op notApp : MyAttrs -> Bool .
+  eq notApp(ticked : b ; attrs)  = true .
+  eq notApp(attrs)  = false [owise] .
+
+endfm
+
+
+fmod APP-AUX is
+  inc APPLICATION .
+  inc EMESSAGES .
+  inc GENSOL .
+
+vars appId fbId id : Id .
+var fbCid : FbC .
+var appCid  : AppDev .
+*** vars i j j1 : Nat .
+var emsg : EMsg .
+vars emsgs emsgs0 emsgs1  emsgs00 emsgs11 : EMsgs .
+vars iMsgs0 iMsgs1 iMsgs iemsgs oemsgs : EMsgs .
+vars fbs fbs1 fbs2 : FBs .
+vars st st1 : State .
+vars css css0 css1 : CSet .
+vars csss csss0 csss1 : CSetSet .
+vars oeffs : OutEvEffs .
+vars ssbs ssbs0 ssbs1 : SSBs .
+vars ssbss ssbss1 : SSBsSet .
+vars attrs attrs1 appAttrs fbAttrs : MyAttrs .
+var symtrs : SymTrs .
+var links : Links .
+var ev : Event .
+var outEv : OutEv .
+var port : Port .
+var b tick : Bool .  
+
+  op hasSol : FBs EMsgs -> Bool .
+  ceq hasSol(fbs, iMsgs) 
+    = true 
+  if [fbId : fbCid | 
+       (state : st) ; (ticked : false) ; fbAttrs] fbs1 := fbs
+    /\ iMsgs0 iMsgs1 := iMsgs
+    /\ symtr(st,st1,[css] csss,oeffs) symtrs 
+             := symtrsFB(fbCid,st)
+    /\ size(iMsgs0) = size(css)
+    /\({ssbs1} ssbss) := genSol1(fbId,iMsgs0,css) .
+
+  eq hasSol(fbs,iMsgs) = false [owise] .
+
+  sort EMsgsEMsgs .
+  op {_,_} : EMsgs EMsgs -> EMsgsEMsgs [ctor] .
+
+  sort FBsEMsgsEMsgs .
+  op {_,_,_} : FBs EMsgs EMsgs -> FBsEMsgsEMsgs [ctor] .
+
+  op extractOutMsgs : Bool FBs FBs EMsgs EMsgs Links 
+                    -> FBsEMsgsEMsgs .
+
+  eq extractOutMsgs(tick, none,fbs,emsgs0,emsgs1,links) 
+  = {fbs,emsgs0,emsgs1} .
+
+
+  ceq extractOutMsgs(tick,
+  [fbId : fbCid | 
+       (ticked : b) ; (oEvEffs : oeffs) ; fbAttrs] fbs, 
+  fbs1,emsgs0,emsgs1,links) 
+  = extractOutMsgs(tick, fbs,
+        [fbId : fbCid |  
+         (ticked : tick) ; (oEvEffs : none) ; fbAttrs]
+          fbs1, 
+         emsgs0 emsgs00, emsgs1 emsgs11,links) 
+  if {emsgs00,emsgs11} := mkMsg(fbId,oeffs,none,none,links) .
+
+  op mkMsg : Id OutEvEffs EMsgs EMsgs Links -> EMsgsEMsgs .
+  op mkMsg$ : Id OutEvEff Links EMsgs EMsgs -> EMsgsEMsgs .
+
+  eq mkMsg(fbId,none,emsgs0,emsgs1,links)
+    = {emsgs0,emsgs1} .
+  ceq mkMsg(fbId,(outEv :~ ev) oeffs, 
+           emsgs0,emsgs1,links) 
+  = mkMsg(fbId,oeffs, 
+          emsgs0 emsgs00, emsgs1 emsgs11,links) 
+  if {emsgs00,emsgs11} := 
+     mkMsg$(fbId,(outEv :~ ev),links,none,none) .
+
+  **** clt thinks there should be one link for any fb port
+  eq mkMsg$(fbId,(outEv :~ ev),
+  {{fbId,outEv},port} links, emsgs0,emsgs1) 
+  = if (portIO(port) :: OutEv)
+    then mkMsg$(fbId,(outEv :~ ev),links,
+                emsgs0,{port,ev} emsgs1)
+    else mkMsg$(fbId,(outEv :~ ev),links,
+                {port,ev} emsgs0,emsgs1) fi . 
+  eq mkMsg$(fbId,(outEv :~ ev),links,emsgs0,emsgs1) 
+  = {emsgs0,emsgs1} [owise] . 
+
+endfm
+
+mod APP-EXE is
+  inc APP-AUX .
+
+vars appId fbId id : Id .
+var fbCid : FbC .
+var emsg : EMsg .
+vars emsgs emsgs0 emsgs1 emsgs00 emsgs11 : EMsgs .
+vars iemsgs oemsgs : EMsgs .
+vars fbs fbs1 fbs2 : FBs .
+vars st st1 : State .
+vars css css0 css1 : CSet .
+vars csss csss0 csss1 : CSetSet .
+vars oeffs : OutEvEffs .
+vars ssbs ssbs0 ssbs1 : SSBs .
+vars ssbss ssbss1 : SSBsSet .
+vars attrs attrs1 appAttrs fbAttrs : MyAttrs .
+var symtrs : SymTrs .
+var links : Links .
+var ev : Event .
+var outEv : OutEv .
+var port : Port .
+var b tick : Bool .  
+
+*** EMessages have the form:  {fbport,ev}
+
+***** fire enabled transitions 
+crl[app-exe1]:
+ [appId | 
+   fbs : ([fbId : fbCid | (state : st) ; (ticked : false) ;
+            oEvEffs : none ;  fbAttrs] fbs1) ;
+   iEMsgs : (emsgs0 iemsgs) ;
+   oEMsgs : oemsgs ; 
+   ssbs : ssbs0 ;
+   appAttrs ]
+ =>
+ [appId | 
+   fbs : ([fbId : fbCid | (state : st1) ; (ticked : true) ;
+             oEvEffs : oeffs ;  fbAttrs] 
+           fbs1) ;
+   iEMsgs : (iemsgs[[ssbs1]]) ;
+   oEMsgs : oemsgs ; 
+   ssbs : (ssbs0 ssbs1) ;
+   appAttrs ]
+  if symtr(st, st1,[css] csss,oeffs) symtrs 
+      := symtrsFB(fbCid,st)
+  /\ size(emsgs0) = size(css)
+  /\({ssbs1} ssbss) := genSol1(fbId,emsgs0,css)
+ [print "\napp-exe1: emsgs0 = " emsgs0] 
+.
+
+**** all enabled transitions fired; collect and deliver output
+crl[app-exe2]:
+ [appId | 
+   fbs : fbs ; 
+   iEMsgs : iemsgs ;
+   oEMsgs : oemsgs ; 
+   ssbs : ssbs  ; attrs]
+ =>
+ [appId | 
+   fbs : fbs2 ; 
+   iEMsgs : emsgs0 ;
+   oEMsgs : (oemsgs emsgs1) ; 
+   ssbs : ssbs  ; attrs1]
+ if not hasSol(fbs,iemsgs)
+ /\ tick := notApp(attrs)
+ /\ not getTicked(attrs)  --- avoid extracting when no trans
+ /\ attrs1 := setTicked(attrs, true)
+ /\ {fbs2,emsgs0,emsgs1} := 
+    extractOutMsgs(tick,fbs,none, 
+                   none,none,appLinks(appId)) 
+ [print "\napp-exe2: tick = " tick "\n  id = " appId "\n  emsgs0 = " emsgs0] 
+  .
+
+**** intruder injects a message
+
+rl[app-intruder]:
+[[appId | 
+   fbs : fbs ; 
+   iEMsgs : emsgs0 ;
+   oEMsgs : oemsgs ; 
+   ssbs : ssbs  ; attrs], emsg emsgs]
+=> 
+[[appId | 
+   fbs : fbs ; 
+   iEMsgs : (emsgs0 emsg) ;
+   oEMsgs : oemsgs ; 
+   ssbs : ssbs  ; attrs], emsgs] 
+ [print "\napp-intruder: emsg = " emsg] .
+
+endm

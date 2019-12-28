@@ -1,0 +1,56 @@
+
+mod PNP-ATTACKS is
+  inc PNP-SCENARIO .
+  inc TRACE2ATTACKS .
+  
+  
+  op pnpAttacks : -> EMsgsSet .
+  eq pnpAttacks = getBadEvents('PNP-SCENARIO,pnpInitI(pnpInit(emsgStart),emsgI)) .
+
+  op pnpAttacks1 : -> EMsgsSet .
+  eq pnpAttacks1 = getBadEvents('PNP-SCENARIO,pnpInitI(pnpInit(emsgStart),emsgI emsgI1)) .
+
+endm
+eof
+
+red pnpAttacks .
+result EMsgsSet: {{{id("ctl"),inEv("HasVac")},ev("HasVac")}} 
+{{{id("ctl"),inEv("atL")},ev("atL")}} {{{id("track"),inEv("GoL")},ev("GoL")}} 
+{{{id("vac"),inEv("VacOff")},ev("VacOff")}}
+
+
+{{sport(0,1),{dev1,{vac,inEv("VacOff")}},ev("VacOff")}} 
+{{sport(0, 1),{dev2,{track,inEv("GoL")}},ev("GoL")}} 
+{{sport(0, 1),{dev3,{ctl,inEv("HasVac")}},ev("HasVac")}} {{sport(0, 1),{dev3,{ctl,inEv("atL")}}, ev("atL")}}
+
+red pnpAttacks1 .
+42 unique solutions
+EMsgsSet: 
+{{{id("ctl"),inEv("HasVac")},ev("HasVac")} {{id("ctl"),inEv( "HasVac")},ev("HasVac")}} 
+{{{id("ctl"),inEv("atL")},ev("atL")} {{id("ctl"), inEv("atL")},ev("atL")}} 
+{{{id("track"),inEv("GoL")},ev("GoL")} {{id( "track"),inEv("GoL")},ev("GoL")}} 
+{{{id("vac"),inEv("VacOff")},ev( "VacOff")} {{id("vac"),inEv("VacOff")},ev("VacOff")}} 
+{{{id("ctl"),inEv( "HasVac")},ev("HasVac")} {{id("ctl"),inEv("NoVac")},ev("NoVac")}} 
+{{{id( "ctl"),inEv("HasVac")},ev("HasVac")} {{id("ctl"),inEv("atL")},ev("atL")}} 
+{{{id("ctl"),inEv("HasVac")},ev("HasVac")} {{id("ctl"),inEv("atR")},ev( "atR")}} 
+{{{id("ctl"),inEv("HasVac")},ev("HasVac")} {{id("ctl"),inEv( "start")},ev("start")}} 
+
+{{{id("ctl"),inEv("HasVac")},ev("HasVac")} {{id( "track"),inEv("GoL")},ev("GoL")}} {{{id("ctl"),inEv("HasVac")},ev( "HasVac")} {{id("track"),inEv("GoL1")},ev("GoL1")}} {{{id("ctl"),inEv( "HasVac")},ev("HasVac")} {{id("track"),inEv("GoR")},ev("GoR")}} {{{id( "ctl"),inEv("HasVac")},ev("HasVac")} {{id("track"),inEv("GoR1")},ev( "GoR1")}} {{{id("ctl"),inEv("HasVac")},ev("HasVac")} {{id("vac"),inEv( "VacOff")},ev("VacOff")}} {{{id("ctl"),inEv("HasVac")},ev("HasVac")} {{id( "vac"),inEv("VacOn")},ev("VacOn")}} {{{id("ctl"),inEv("NoVac")},ev( "NoVac")} {{id("ctl"),inEv("atL")},ev("atL")}} {{{id("ctl"),inEv("NoVac")}, ev("NoVac")} {{id("track"),inEv("GoL")},ev("GoL")}} 
+{{{id("ctl"),inEv( "NoVac")},ev("NoVac")} {{id("vac"),inEv("VacOff")},ev("VacOff")}} 
+{{{id( "ctl"),inEv("atL")},ev("atL")} {{id("ctl"),inEv("atR")},ev("atR")}} {{{id( "ctl"),inEv("atL")},ev("atL")} {{id("ctl"),inEv("start")},ev("start")}} {{{ id("ctl"),inEv("atL")},ev("atL")} {{id("track"),inEv("GoL")},ev("GoL")}} {{ {id("ctl"),inEv("atL")},ev("atL")} {{id("track"),inEv("GoL1")},ev("GoL1")}} {{{id("ctl"),inEv("atL")},ev("atL")} {{id("track"),inEv("GoR")},ev("GoR")}} {{{id("ctl"),inEv("atL")},ev("atL")} {{id("track"),inEv("GoR1")},ev( "GoR1")}} {{{id("ctl"),inEv("atL")},ev("atL")} {{id("vac"),inEv("VacOff")}, ev("VacOff")}} {{{id("ctl"),inEv("atL")},ev("atL")} {{id("vac"),inEv( "VacOn")},ev("VacOn")}} {{{id("ctl"),inEv("atR")},ev("atR")} {{id("track"), inEv("GoL")},ev("GoL")}} {{{id("ctl"),inEv("atR")},ev("atR")} {{id("vac"), inEv("VacOff")},ev("VacOff")}} {{{id("ctl"),inEv("start")},ev("start")} {{ id("track"),inEv("GoL")},ev("GoL")}} {{{id("ctl"),inEv("start")},ev( "start")} {{id("vac"),inEv("VacOff")},ev("VacOff")}} 
+
+
+{{{id("ctl"),inEv( "stop")},ev("stop")} {{id("track"),inEv("GoL")},ev("GoL")}} 
+{{{id("track"), inEv("GoL")},ev("GoL")} {{id("track"),inEv("GoL1")},ev("GoL1")}} {{{id( "track"),inEv("GoL")},ev("GoL")} {{id("track"),inEv("GoR")},ev("GoR")}} {{{ id("track"),inEv("GoL")},ev("GoL")} {{id("track"),inEv("GoR1")},ev( "GoR1")}} {{{id("track"),inEv("GoL")},ev("GoL")} 
+ {{id("vac"),inEv( "VacOff")},ev("VacOff")}} {{{id("track"),inEv("GoL")},ev("GoL")} 
+ {{id( "vac"),inEv("VacOn")},ev("VacOn")}} 
+ 
+{{{id("track"),inEv("GoL1")},ev( "GoL1")}  
+ {{id("vac"),inEv("VacOff")},ev("VacOff")}} 
+{{{id("track"),inEv( "GoR")},ev("GoR")} {{id("vac"),inEv("VacOff")},ev("VacOff")}} 
+{{{id( "track"),inEv("GoR1")},ev("GoR1")} {{id("vac"),inEv("VacOff")},ev( "VacOff")}} 
+{{{id("vac"),inEv("VacOff")},ev("VacOff")} {{id("vac"),inEv( "VacOn")},ev("VacOn")}} 
+
+{{{id("ctl"),inEv("HasVac")},ev("HasVac")}} 
+{{{id( "ctl"),inEv("atL")},ev("atL")}} {{{id("track"),inEv("GoL")},ev("GoL")}} 
+{{{ id("vac"),inEv("VacOff")},ev("VacOff")}}
