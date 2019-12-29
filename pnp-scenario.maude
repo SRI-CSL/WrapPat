@@ -71,4 +71,6 @@ mod PNP-SCENARIO is
 endm
 eof
 
+select PNP-SCENARIO .
 red pnpInit(emsgStart) .
+rew [20] pnpInit(emsgStart) .

@@ -25,6 +25,6 @@ fmod MYATTRS is
   sorts MyAttr MyAttrs .
   subsort MyAttr < MyAttrs .
   op none : -> MyAttrs [ctor] .
-  op _;_ : MyAttrs MyAttrs -> MyAttrs  [ctor assoc comm id: none format (d d ni d)] .
+  op _;_ : MyAttrs MyAttrs -> MyAttrs  [ctor assoc comm id: none format (d d nt d)] .
 
 endfm

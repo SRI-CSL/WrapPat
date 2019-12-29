@@ -18,7 +18,8 @@ fmod APPLICATION is
   op appLinks : Id -> Links .
   
   sort Application .
-  op [_|_] : Id  MyAttrs -> Application .
+  op [_|_] : Id  MyAttrs -> Application 
+              [ctor format (n d d d d d)] .
   op fbs`:_ : FBs -> MyAttr .
   op iEMsgs`:_ : EMsgs -> MyAttr .
   op oEMsgs`:_ : EMsgs -> MyAttr .
@@ -40,7 +41,7 @@ fmod APPLICATION is
 
 
   sort AppIntruder .
-  op [_,_] : Application EMsgs -> AppIntruder .
+  op [_,_] : Application EMsgs -> AppIntruder [ctor] .
   op getApp : AppIntruder -> Application .
   eq getApp([app:Application,emsgs]) = app:Application .
 

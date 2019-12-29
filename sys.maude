@@ -112,6 +112,8 @@ fmod SYS-AUX is
   var idmap : Map{Id,Id} .
   var b : Bool .
   var iPol : iPolicy .
+  vars srcP tgtP : Port .
+  var opol : oPolicy .
  
  **** initially devs should have ticked false  
  **** all devs have ticked : true, 
@@ -256,12 +258,29 @@ fmod SYS-AUX is
    if {{fbId,in},ev} := emsg
    /\ {{fbId0,out},{fbId,in}} links0 := links
    /\ devId0 := idmap[fbId]
+   *** emsg is kept
    /\ emsgs0 := (if devId == devId0 then emsg else none fi)
+   *** emsg is exported
    /\ imsgs0 := 
       (if devId == devId0 
        then none 
-       else {{devId,{fbId0,out}},{devId0,{fbId,in}},ev}
+***** sign if have policy
+       else checkOPol(attrs,
+                     {devId,{fbId0,out}},{devId0,{fbId,in}},ev)
        fi) .
+
+**** [o : fbId ; out]     
+  op checkOPol : MyAttrs Port Port Event -> Msg .
+  op applyOPol : oPolicy Port Port Event -> Msg .
+  eq checkOPol(oPol : opol ; attrs, srcP, tgtP, ev)
+     = applyOPol(opol, srcP, tgtP, ev) .
+  eq checkOPol(attrs, srcP, tgtP, ev) 
+       = {srcP,tgtP,ev} [owise] . --- no opol
+  eq applyOPol(opol [o : fbId0 ; out], 
+               {devId,{fbId0,out}}, tgtP, ev) 
+     = {{devId,{fbId0,out}}, tgtP,sg(ev,devId)} .           
+  eq applyOPol(opol, srcP, tgtP, ev) 
+        = {srcP,tgtP,ev} [owise] . --- no applicable opol
 
   op emsgs2omsgs : Id Id EMsgs Msgs Links -> Msgs .
 

@@ -1,5 +1,6 @@
 Module summary
 
+****** load.maude
 basics.maude
 
   fmod ID 
@@ -180,7 +181,6 @@ fb-lib.maude
   fmod FB-LIB is inc VACUMM-FB . inc TRACK-FB . 
                  inc CONTROL-FB . inc BAD-CONTROL-FB .
 
-  
 pnp-scenario.maude
   mod PNP-SCENARIO is inc FB-LIB . inc APP-EXE .
     appLinks(id("pnp")) = 
@@ -190,7 +190,6 @@ pnp-scenario.maude
     op badState : FBs -> Bool .
     op badState : Application -> Bool .
     op badState : AppIntruder -> Bool .
-
 
 trace2attacks.maude
 
@@ -275,3 +274,5 @@ sys.maude
     
 pnp-scenario-deployed.maude
 wrap.maude
+pnp-scenario-wrap.maude
+

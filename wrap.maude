@@ -21,21 +21,36 @@ fmod WRAP-SYSTEM is
  var idmap : Map{Id,Id} .
  var links links0 : Links .
  var attrs : MyAttrs .
- var emsgs : EMsgs .
  var in : InEv .
  var out : OutEv .
  var ev : Event .
  vars ipol ipol1 : iPolicy .
  vars opol opol1 : oPolicy .
+ var emsgs emsgs0 : EMsgs .
+ vars emsg emsg0 : EMsg .
+ var emsgss : EMsgsSet .
+ 
 
- op wrap-sys : System EMsgs -> System .
+ op addEMsgs : EMsgs EMsgs -> EMsgs .
+ ceq addEMsgs(emsgs, emsgs0 emsg) =
+      addEMsgs(emsgs emsg0, emsgs0) 
+ if emsg0 := (if mem(emsgs,emsg) then none else emsg fi) .      
+ eq addEMsgs(emsgs, none) = emsgs .
+      
+ op flattenEMsgsSet : EMsgsSet EMsgs -> EMsgs .
+ eq flattenEMsgsSet(none,emsgs) = emsgs .
+ eq flattenEMsgsSet({emsgs0} emsgss,emsgs) = 
+     flattenEMsgsSet(emsgss,addEMsgs(emsgs,emsgs0)) .
+ 
+ op wrap-sys : System EMsgsSet -> System .
  op wrap-devs : Apps EMsgs Links Map{Id,Id} Apps -> Apps . 
  op wrap-dev : Application EMsgs Links Map{Id,Id} 
                iPolicy oPolicy -> Application . 
  
- ceq wrap-sys([sysId | appId | devs : devs ; attrs ],emsgs)
+ ceq wrap-sys([sysId | appId | devs : devs ; attrs ],emsgss)
             = [sysId | appId | devs : devs1 ; attrs ]
-  if devs1 :=
+  if emsgs := flattenEMsgsSet(emsgss,none)
+  /\ devs1 :=
       wrap-devs(devs,emsgs,appLinks(appId),sysMap(sysId), 
                 none) .
 

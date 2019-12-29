@@ -27,11 +27,12 @@ op nil : -> AppIntList [ctor] .
 op _;_ : AppIntList AppIntList 
             -> AppIntList [ctor assoc id: nil] .
 
+***(
 sort EMsgsSet .
 op none : -> EMsgsSet .
 op {_} : EMsgs -> EMsgsSet [ctor] .
 op __ : EMsgsSet EMsgsSet -> EMsgsSet [ctor comm assoc id: none] .
-
+)
 op mtAppInt : -> AppIntruder [ctor] .
 
 op getBadEvents :  Qid AppIntruder -> EMsgsSet .

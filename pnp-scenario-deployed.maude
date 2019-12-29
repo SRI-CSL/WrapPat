@@ -185,8 +185,7 @@ search [1] pnpDInitI(dPnP-vc-t,none) =>+  sysI:SysIntruder such that badState(sy
 No solution.
 
 search pnpDInitI(dPnP-vc-t,{{id("d1"),{id("vac"),outEv("HasVac")}}, {id("d1"),{id("ctl"),inEv("HasVac")}}, ev("HasVac")}) =>+ sysI:SysIntruder such that badState(sysI:SysIntruder) .
-Solution 8 (state 282)
-
+No solution .
 
 search pnpDInitI(dPnP-vc-t,{{id("d2"),{id("track"),outEv("atL")}}, {id("d1"),{id("ctl"),inEv("atL")}}, ev("atL")}) =>+ sysI:SysIntruder such that badState(sysI:SysIntruder) .
 Solution 2 (state 287)

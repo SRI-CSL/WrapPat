@@ -28,9 +28,19 @@ fmod EMESSAGES is
    = setminus(emsgs0,emsg emsgs1) .
   eq setminus(emsgs0,emsgs1) = emsgs0 [owise] .
 )
+
+  op mem : EMsgs EMsg -> Bool .
+  eq mem(emsgs emsg,emsg) = true .
+  eq mem(emsgs,emsg) = false [owise] .
+  
   op size : EMsgs -> Nat .
   eq size(emsg emsgs) = s(size(emsgs)) .
   eq size((none).EMsgs) = 0 .
+
+  sort EMsgsSet .
+  op none : -> EMsgsSet .
+  op {_} : EMsgs -> EMsgsSet [ctor] .
+  op __ : EMsgsSet EMsgsSet -> EMsgsSet [ctor comm assoc id: none] .
 
 
 endfm

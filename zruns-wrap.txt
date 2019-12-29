@@ -1,9 +1,5 @@
-maude load-deploy.maude
-
-select PNP-SCENARIO-DEPLOYED .
-set print attribute on .
-rew [20] dPnP1-1 .
-rewrite [20] in PNP-SCENARIO-DEPLOYED : dPnP1-1 .
+Maude> rew [20] wPnP1-1  .
+rewrite [20] in PNP-SCENARIO-WRAP : wPnP1-1 .
 
 sys-deliver: imsgs = {{id("pnp1-1"),{id("d1"),inEv("start")}},{id("d1"),{id(
     "ctl"),inEv("start")}},ev("start")}
@@ -72,7 +68,7 @@ app-exe1: emsgs0 = {{id("ctl"),inEv("atR")},ev("atR")}
 app-exe2: tick = true
   id = id("d1")
   emsgs0 = {{id("vac"),inEv("VacOn")},ev("VacOn")}
-rewrites: 1197 in 1ms cpu (1ms real) (741635 rewrites/second)
+rewrites: 1391 in 3ms cpu (3ms real) (420368 rewrites/second)
 result System: [id("pnp1-1") | id("pnp") | devs : (
 [id("d1") | ticked : true ;
 	fbs : [id("ctl") : ctl | state : st("ROff") ;
@@ -81,7 +77,11 @@ result System: [id("pnp1-1") | id("pnp") | devs : (
 	ticked : true] ;
 	iEMsgs : {{id("vac"),inEv("VacOn")},ev("VacOn")} ;
 	oEMsgs : none ;
-	ssbs : none]
+	ssbs : none ;
+	iPol : ([i : id("ctl") ; inEv("HasVac"),id("d2")] [i : id("ctl") ;
+    inEv("atL"),id("d3")]) ;
+	oPol : ([o : id("ctl") ; outEv("GoL")] [o : id("ctl") ; outEv(
+    "VacOff")])]
 [id("d2") | ticked : false ;
 	fbs : [id("vac") : vac | state : st("off") ;
 	iEvEffs : none ;
@@ -89,7 +89,9 @@ result System: [id("pnp1-1") | id("pnp") | devs : (
 	ticked : false] ;
 	iEMsgs : none ;
 	oEMsgs : none ;
-	ssbs : none]
+	ssbs : none ;
+	iPol : [i : id("vac") ; inEv("VacOff"),id("d1")] ;
+	oPol : [o : id("vac") ; outEv("HasVac")]]
 [id("d3") | ticked : false ;
 	fbs : [id("track") : track | state : st("R") ;
 	iEvEffs : none ;
@@ -97,13 +99,15 @@ result System: [id("pnp1-1") | id("pnp") | devs : (
 	ticked : false] ;
 	iEMsgs : none ;
 	oEMsgs : none ;
-	ssbs : none]) ;
+	ssbs : none ;
+	iPol : [i : id("track") ; inEv("GoL"),id("d1")] ;
+	oPol : [o : id("track") ; outEv("atL")]]) ;
 	iMsgs : none ;
 	oMsgs : none]
-  
-------------------------------------
-Maude> rew [20] dPnP-vc-t .
-rewrite [20] in PNP-SCENARIO-DEPLOYED : dPnP-vc-t .
+
+----------------------------------
+Maude> rew [20] wPnP-vc-t  .
+rewrite [20] in PNP-SCENARIO-WRAP : wPnP-vc-t .
 
 sys-deliver: imsgs = {{id("pnp-vc-t"),{id("d1"),inEv("start")}},{id("d1"),{id(
     "ctl"),inEv("start")}},ev("start")}
@@ -169,7 +173,7 @@ sys-collect: imsgs1 = (none).Msgs
     omsgs1 = (none).Msgs
 
 app-exe1: emsgs0 = {{id("vac"),inEv("VacOn")},ev("VacOn")}
-rewrites: 1377 in 4ms cpu (5ms real) (319193 rewrites/second)
+rewrites: 1520 in 5ms cpu (6ms real) (289193 rewrites/second)
 result System: [id("pnp-vc-t") | id("pnp") | devs : (
 [id("d1") | ticked : false ;
 	fbs : ([id("ctl") : ctl | state : st("ROff") ;
@@ -181,7 +185,9 @@ result System: [id("pnp-vc-t") | id("pnp") | devs : (
 	ticked : true]) ;
 	iEMsgs : none ;
 	oEMsgs : none ;
-	ssbs : none]
+	ssbs : none ;
+	iPol : [i : id("ctl") ; inEv("atL"),id("d2")] ;
+	oPol : [o : id("ctl") ; outEv("GoL")]]
 [id("d2") | ticked : false ;
 	fbs : [id("track") : track | state : st("R") ;
 	iEvEffs : none ;
@@ -189,8 +195,9 @@ result System: [id("pnp-vc-t") | id("pnp") | devs : (
 	ticked : false] ;
 	iEMsgs : none ;
 	oEMsgs : none ;
-	ssbs : none]) ;
+	ssbs : none ;
+	iPol : [i : id("track") ; inEv("GoL"),id("d1")] ;
+	oPol : [o : id("track") ; outEv("atL")]]) ;
 	iMsgs : none ;
 	oMsgs : none]
   
-    
