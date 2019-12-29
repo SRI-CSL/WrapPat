@@ -43,7 +43,7 @@ From the initial state we can execute (rewrite) a number of
 steps to watch the message flow. We can also search for bad
 (or good) states to determine of the app behaves as desired.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%
 Intruder model
 
 The above execution model assumes the app is isolated.
@@ -104,7 +104,7 @@ and corresponding incoming messages.  Corresponding
 execution rules deliver the same messages, gather the
 same outputs, and inject corresponding intruder messages.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%
 Deployment 
 
 A System is a deployed application--a collection
@@ -161,24 +161,19 @@ otherwise
   If [S,imsgs] leads to a bad state, then [A,imsgs] leads to
   (the same) badState.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%
 Wrapping
 
 A device protects communications among its function blocks,
 hence the second part of the theorem above.  To protect
 communications between function blocks on different devices
 we transform a device into a wrapped device that protects
-communications by signing specified messages and checking 
-signatures.   
-      wrap(sys,msgs)
+communications between devices by signing specified messages 
+and checking signatures using the function wrap(sys,emsgs).
+
 Given a set of messages to protect, the application level
 links, and the deployment map, input and output policies
 are added to each device as follows.
-
-      wrap(sys,msgs)  
-
-(the application links and deployment map are implicit in sys)
-
 Let M be a message to be protected, its destination a port on
 on a function block on device d1, its source a port on
 a function block on device d2 (determined using links and
@@ -188,14 +183,16 @@ from the source port, and a policy rule is added to the
 input police of d1 to only accept messages to the destination
 port if signed by d2.
 
+Note that in wrap(sys,emsgs) the application links and deployment map are implicit in sys.
+
 
 Wrapper Theorem
 
   If msgs contains bad(App,badState,n) then
 badState is not reachable from 
-   [wrap(deploy(app,map),msgs),(allmsgs,n)]
+   [wrap(deploy(app,map),msgs),allmsgs,n]
   
-
+%%%%%%%%%%%%%%%%%%%%%
 Finding a suitable deployment map
 
 Signing is expensive. The wrapper policy generation attempts
@@ -274,6 +271,10 @@ appAttrs is a set of attribute-value pairs including
 where funBs is a set of function blocks with unique
 identifiers, and emsgs is the set of incoming messages of
 the form {{fbId,in},ev}.
+
+Notation:  we use fbId, fbId0 ... for FB identifiers,
+in/out for FB input/output connections, and ev for the event/
+signal transmitted by a message.
 
 Links of the form {{fbId0,out},{fbId1,in}} connect ouputs of
 one FB to inputs of another FB (possibly the same). They
@@ -487,6 +488,16 @@ it is easy to see that TrS_0 extends as desired.
 
 Corrollary search enumerates all bad messages.
 TO DO --CLEANUP
+In Maude the function getBadEvents(module,appI,emsgI)) 
+
+ceq getBadEvents$(module,appIntT,n,emSet) 
+ = getBadEvents$(module,appIntT,s n,{emsgs0} emSet)
+ if appIntL := toAppIntList$(module,appIntT,n) 
+ /\ not (appIntL == mtAppInt)
+ /\ emsgs0 := getEmsgIs(appIntL,none) .
+
+ eq getBadEvents$(module,appIntT,n,emSet) = emSet [owise] .
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Deployment
 
@@ -592,20 +603,153 @@ by sys-exe in the system execution.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Intruders at the system level
 
+Deployed applications are embedded in an intruder environment
+analogously to the abstract applications.  In light of the
+Intruder theorem, we only consider the concrete case.
+Thus a system with intruder has the form
 
+    [sys,msgs,n]  
+    
+and we lift the deployment function to
+deployAppI(sysId,[A,msgs,n],smap) = 
+[deployApp[sysMap,A,smap],deployMsgs(msgs,appLinks(A),smap)]
+where deployMsgs transforms application level messages {fbport,ev}
+to system level, {srcdevport,tgtdevport,ev} using the link and deployment maps.
+
+The intruder injection rule is lifted as follows:
     
 rl[sys-intruder]:
 [[sysId | appId | 
    devs : devs ; 
    iMsgs : imsgs ;
    oMsgs : omsgs ; 
-   attrs], msg msgs]
+   attrs], msg msgs, s n]
 => 
 [[sysId | appId | 
    devs : devs ; 
    iMsgs : (imsgs msg) ;
    oMsgs : omsgs ; 
-   attrs], msgs] .   
+   attrs], msg msgs, n] .   
+
+System Intruder Theorem.
+
+Assume AI = [A,msgs,n] where A is an application in its initial
+state (no intruder messages injected) and SI =
+deployAppI(sysId,AI,smap)
+
+1. If TrS is a trace from SI  then there is a corresponding trace
+from AI.  
+
+2. If TrA is a trace from AI that delivers no intruder messages
+that flow on links internal to a device, then there is
+a corresponding trace from SI.  
+
+The proof is the same as for the correspondence of an application
+and its deployment.   The additional condition in part 2 is needed
+because devices protect communications between FBs it hosts.
+In particular, if all the FBs are hosted on a single device
+then no intruder messages can be delivered.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Wrapping
+
+A wrapped device has input/output policy attributes used to
+control the flow of messages in and out of the device.
+An input policy, sort iPolicy, is an iFact set where an
+iFact has the form [i : fbId ; in, devId] and an oFact has
+the form [o : fbId ; out].
+
+If [i : fbId ; in, devId] is in the input policy of a device then
+a message {{fbId,in}, ev} is accepted by that device only if ev
+is signed by devId, otherwise the message is dropped. Dually, if
+[o : fbId ; out] is in the output policy of a device then when a
+message {{fbId,out}, ev} is transmitted ev is signed by the
+device.
+
+Following the usual logical representation of crypto functions,
+we represent a signed event by a term sg(ev,devId), assuming only
+the device with identifier devId can produce such a signature,
+and any device that knows the device identifier can check the
+signature.   
+
+The function wrap-sys(sys,emsgs) wraps each device of sys
+with policies that enforce signing/checking signatures
+of messages in emsgs that flow between devices.
+The key is the function wrapping individual devices:
+
+**** wrap-dev is called with links as appLinks(appId) 
+**** and idmap as sysMap(sysId)
+  ceq wrap-dev(dev,{{fbId,in},ev} emsgs,links,idmap, 
+               ipol,opol)
+    = wrap-dev(dev,emsgs,links,idmap,
+               (ipol ipol1), (opol opol1))
+  if {{fbId0,out},{fbId,in}} links0 := links
+  /\ devId1 := idmap[fbId]
+  /\ devId0 := idmap[fbId0]
+  /\ devId1 =/= devId0    ---- not an internal link
+  /\ devId := getId(dev) 
+  **** if emsg sent from dev add opol to sign outgoing
+  /\ opol1 := (if devId == devId0 
+               then [o : fbId0 ; out ]
+               else none
+               fi)
+  **** if emsg rcvd by dev, require signed by sender devId0
+  /\ ipol1 := (if devId == devId1
+               then [i : fbId ; in, devId0]
+               else none
+               fi) . 
+
+  eq wrap-dev(dev,emsgs,links,idmap,ipol,opol) =
+      addAttr(dev,(iPol : ipol ; oPol : opol)) [owise] .
+ 
+
+Wrapper Theorem
+Assume A is an application, allMsgs is the set of 
+messages deliverable in an exeution of A,
+and smsgs a set of symbolic messages of size n.
+Assume badState is not reachable in an execution of A.
+
+If emsgs contains getBadEvents([A,smsgs]) then
+
+1. Let WA = [wrap(deploy(A,smap),emsgs)
+ Then every execution from WA has a corresponding
+ execution from A and conversely.  In particular
+ badState is not reachable from WA.
+
+2. badState is not reachable from 
+
+   WAC = [wrap(deploy(A,smap),emsgs),allMsgs,n]
+
+Proof 1.
+Similar to the deployment theorem part 1, noting that by
+definition of the wrap function, any message in emsg will be
+signed by the sending device and thus will satisfy the receiving
+device input policy and be deliver in the WA trace as it will in
+the A trace.  In par
+  
+Proof 2.
+Assume badState is reachable from WAS.
+Let 
+   WAC = WAC_0 rl_0 ..... rl_k WAC_k+1 
+
+be a witness execution where badState(WAS_k+1).
+By the assumption on A part 1, at least one 
+intruder message must have been delivered.
+
+Let {emsg_1 ... emsg_l} be the intruder messages delivered
+in the trace, say by rules rl_j_1 .. rl_l.  None of these
+messages are in emsgs since their events cannot be signed
+by one of the devices, and thus would not satisfy the 
+relevant input policy.   
+Thus there is a corresponding trace from
+   AC = [deploy(A,smap),allMsgs,n]
+and
+  from [A,allMsgs,n]
+
+but emsgs contains all messages that are part of an intruder
+message set which if injected can cause badState to be reached.
+A contradiction.
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
 

@@ -57,6 +57,7 @@ fmod WRAP-SYSTEM is
   if {{fbId0,out},{fbId,in}} links0 := links
   /\ devId1 := idmap[fbId]
   /\ devId0 := idmap[fbId0]
+  /\ devId1 =/= devId0    ---- not an internal link
   /\ devId := getId(dev) 
   **** if emsg sent from dev add opol to sign outgoing
   /\ opol1 := (if devId == devId0 

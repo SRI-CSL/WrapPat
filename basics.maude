@@ -14,11 +14,7 @@ fmod ID is
   eq mem(id,id ids) = true .
   eq mem(id,ids) = false [owise] .
 
-  sorts AppDev Cid .
-  subsort AppDev < Cid .
-  sorts AppC DevC .
-  subsort AppC DevC < AppDev .
-  sort FbC .
+  sorts FbC Cid .
   subsort FbC < Cid .  
 
 endfm

@@ -150,11 +150,11 @@ fmod COND is
   var ev : Event .
   sort Cond   .
 
-  ops tt ff : ->  Cond .
+  ops tt ff : ->  Cond [ctor] .
+  op _is_ : InEv Event -> Cond [ctor] . 
   op _and_ : Cond Cond -> Cond [assoc comm] .
   op _or_ : Cond Cond -> Cond [assoc comm] .
   op not_ : Cond -> Cond .
-  op _is_ : InEv Event -> Cond . 
 
   op toNNF : Cond -> Cond .
   eq toNNF(tt) = tt .
@@ -186,7 +186,6 @@ endfm
 
 fmod TRANSITION is 
   inc COND .
-  inc EFFECTS .
 
 vars trs trs0 : Trs .
 var tr : Tr .
@@ -273,7 +272,7 @@ eq cidOf([id : cid:FbC | attrs]) = cid:FbC .
 op getState : FB -> State .
 eq getState([id : fbCid | (state : st) ; attrs]) = st .
 
-
+***(
 op getSentEvs : FbC -> Events .
 op getSentEvs : Trs Events -> Events .
 
@@ -281,13 +280,6 @@ eq getSentEvs(cid:FbC) = getSentEvs(trsFB(cid:FbC),none) .
 eq getSentEvs(tr trs,evs) 
   =  getSentEvs(trs,getEvs(getTrOutEvs(tr),none) evs) .
 eq getSentEvs(none,evs) = evs .
-
-endfm
-
-***(
-symbolic transitions
-   /\ csssevs := fbCSetSet(trs,bijs,none)
-
-
 )
 
+endfm

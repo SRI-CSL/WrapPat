@@ -91,8 +91,6 @@ fmod APP-AUX is
 
 vars appId fbId id : Id .
 var fbCid : FbC .
-var appCid  : AppDev .
-*** vars i j j1 : Nat .
 var emsg : EMsg .
 vars emsgs emsgs0 emsgs1  emsgs00 emsgs11 : EMsgs .
 vars iMsgs0 iMsgs1 iMsgs iemsgs oemsgs : EMsgs .

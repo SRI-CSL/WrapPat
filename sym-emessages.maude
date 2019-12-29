@@ -43,6 +43,7 @@ fmod SYM-EMESSAGES is
  eq toIK(ev evs) = ik(ev) toIK(evs) .
 
  op ik : Event -> IKEle .
+ **** below not used
  op ik : Id -> IKEle .
  op ik : InEv -> IKEle .
  op ik : OutEv -> IKEle .

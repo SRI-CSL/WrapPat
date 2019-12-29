@@ -45,6 +45,7 @@ fmod CONSTRAINTS is
   eq mem(cs,cs css) = true .
   eq mem(cs,css) = false [owise] .
 
+**** Not used
   op dom : CSet -> Ins .
   op dom$ : CSet Ins -> Ins .
   eq dom(css)  = dom$(css,none) .
@@ -193,6 +194,7 @@ fmod GENSOL is
             [ctor assoc comm id: none] .
   op `{_`} : SSBs -> SSBsSet [ctor] .
   
+**** not used
   op genSol : Id EMsgs CSetSet -> SSBsSet .
   eq genSol(fbid,emsgs0,[css] csss) = 
       genSol1(fbid,emsgs0,css)
