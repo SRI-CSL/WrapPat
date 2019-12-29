@@ -1,0 +1,84 @@
+mod PNP-SCENARIO-WRAP is
+  inc PNP-SCENARIO-DEPLOYED . 
+      ---  inc SYS-EXE .  inc PNP-SCENARIO . inc DEPLOY-APP .
+  inc TRACE2ATTACKS . ---  inc META-LEVEL .  inc APP-EXE .
+  inc WRAP-SYSTEM .
+     --- inc APPLICATION . inc SYSTEM . 
+     --- inc POLICY . inc SIGNED-MESSAGES .
+  
+
+  op pnpAttacks : -> EMsgsSet .
+  eq pnpAttacks = getBadEvents('PNP-SCENARIO,pnpInitI(pnpInit(emsgStart),emsgI)) .
+
+  op pnpBad : -> EMsgsSet .
+  eq pnpBad =
+      {{{id("ctl"),inEv("HasVac")},ev("HasVac")}} 
+      {{{id("ctl"),inEv("atL")},ev("atL")}} 
+      {{{id("track"),inEv("GoL")},ev("GoL")}} 
+      {{{id("vac"),inEv("VacOff")},ev("VacOff")}} .
+  
+  ops wPnP1-1 wPnP-vc-t : -> System .
+****  eq wPnP1-1 = wrap-sys(dPnP1-1,pnpAttacks) .
+****  eq wPnP-vc-t = wrap-sys(dPnP-vc-t,pnpAttacks) .
+
+**** avoid regeneration of pnpAttacks
+  eq wPnP1-1 = wrap-sys(dPnP1-1,pnpBad) .
+  eq wPnP-vc-t = wrap-sys(dPnP-vc-t,pnpBad) .
+
+endm
+eof
+
+*********** 1-1
+
+result EMsgsSet: 
+{{{id("ctl"),inEv("HasVac")},ev("HasVac")}} 
+{{{id("ctl"),inEv("atL")},ev("atL")}} 
+{{{id("track"),inEv("GoL")},ev("GoL")}} 
+{{{id("vac"),inEv("VacOff")},ev("VacOff")}}
+    
+red wPnP1-1  .
+
+set print attribute on .
+rew [20] wPnP1-1  .
+
+set print attribute off .
+
+search [1] pnpDInitI(wPnP1-1,none) =>+  sysI:SysIntruder such that badState(sysI:SysIntruder) .
+No Solution
+
+search  pnpDInitI(wPnP1-1,badVacOff) =>+  sysI:SysIntruder such that badState(sysI:SysIntruder) .
+No Solution
+
+search  pnpDInitI(wPnP1-1,badHasVac) =>+  sysI:SysIntruder such that badState(sysI:SysIntruder) .
+No Solution
+
+search  pnpDInitI(wPnP1-1,badGoL) =>+  sysI:SysIntruder such that badState(sysI:SysIntruder) .
+No Solution
+
+search  pnpDInitI(wPnP1-1,badatL) =>+  sysI:SysIntruder such that badState(sysI:SysIntruder) .
+No Solution
+
+*********** vc-t
+
+red wPnP-vc-t  .
+
+set print attribute on .
+rew [20] wPnP-vc-t  .
+
+set print attribute off .
+search [1] pnpDInitI(wPnP-vc-t,none) =>+  sysI:SysIntruder such that badState(sysI:SysIntruder) .
+No solution.
+
+search pnpDInitI(wPnP-vc-t,{{id("d1"),{id("vac"),outEv("HasVac")}}, {id("d1"),{id("ctl"),inEv("HasVac")}}, ev("HasVac")}) =>+ sysI:SysIntruder such that badState(sysI:SysIntruder) .
+No solution .
+
+search pnpDInitI(wPnP-vc-t,{{id("d2"),{id("track"),outEv("atL")}}, {id("d1"),{id("ctl"),inEv("atL")}}, ev("atL")}) =>+ sysI:SysIntruder such that badState(sysI:SysIntruder) .
+No solution .
+
+search pnpDInitI(wPnP-vc-t,{{id("d1"),{id("ctl"),outEv("GoL")}}, {id("d2"),{id("track"), inEv("GoL")}}, ev("GoL")}) =>+ sysI:SysIntruder such that badState(sysI:SysIntruder) .
+No solution.
+
+search pnpDInitI(wPnP-vc-t,{{id("d1"),{id("ctl"),outEv("VacOff")}}, {id("d1"),{id("vac"),inEv("VacOff")}}, ev("VacOff")}) =>+ sysI:SysIntruder such that badState(sysI:SysIntruder) .
+No solution.
+
+

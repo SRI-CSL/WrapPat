@@ -1,0 +1,5 @@
+load load-deploy
+load wrap
+load pnp-scenario-wrap
+
+set print attribute on .
