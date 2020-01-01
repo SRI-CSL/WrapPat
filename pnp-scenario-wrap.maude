@@ -8,7 +8,7 @@ mod PNP-SCENARIO-WRAP is
   
 
   op pnpAttacks : -> EMsgsSet .
-  eq pnpAttacks = getBadEvents('PNP-SCENARIO,pnpInitI(pnpInit(emsgStart),emsgI)) .
+  eq pnpAttacks = getBadEMsgs('PNP-SCENARIO,pnpInitI(pnpInit(emsgStart),emsgI)) .
 
   op pnpBad : -> EMsgsSet .
   eq pnpBad =

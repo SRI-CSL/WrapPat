@@ -198,7 +198,7 @@ trace2attacks.maude
     sort EMsgsSet .
     op {_} : EMsgs -> EMsgsSet [ctor] .
     op mtAppInt : -> AppIntruder [ctor] .
-    op getBadEvents :  Qid AppIntruder -> EMsgsSet .
+    op getBadEMsgs :  Qid AppIntruder -> EMsgsSet .
     *** module, initialConf and search index
       op toAppIntList$ : Module Term Nat -> AppIntList .
       op getEmsgIs : AppIntList EMsgs -> EMsgs .

@@ -35,20 +35,20 @@ op __ : EMsgsSet EMsgsSet -> EMsgsSet [ctor comm assoc id: none] .
 )
 op mtAppInt : -> AppIntruder [ctor] .
 
-op getBadEvents :  Qid AppIntruder -> EMsgsSet .
-op getBadEvents$ :  Module Term Nat EMsgsSet -> EMsgsSet .
+op getBadEMsgs :  Qid AppIntruder -> EMsgsSet .
+op getBadEMsgs$ :  Module Term Nat EMsgsSet -> EMsgsSet .
 
-eq getBadEvents(mname,appInt) = 
+eq getBadEMsgs(mname,appInt) = 
   removeDup(
-      getBadEvents$([mname],upTerm(appInt),0,none)) .
+      getBadEMsgs$([mname],upTerm(appInt),0,none)) .
 
-ceq getBadEvents$(module,appIntT,n,emSet) 
- = getBadEvents$(module,appIntT,s n,{emsgs0} emSet)
+ceq getBadEMsgs$(module,appIntT,n,emSet) 
+ = getBadEMsgs$(module,appIntT,s n,{emsgs0} emSet)
  if appIntL := toAppIntList$(module,appIntT,n) 
  /\ not (appIntL == mtAppInt)
  /\ emsgs0 := getEmsgIs(appIntL,none) .
 
- eq getBadEvents$(module,appIntT,n,emSet) = emSet [owise] .
+ eq getBadEMsgs$(module,appIntT,n,emSet) = emSet [owise] .
 
 op removeDup : EMsgsSet  -> EMsgsSet .
 eq removeDup({emsgs0} {emsgs0} emSet) 

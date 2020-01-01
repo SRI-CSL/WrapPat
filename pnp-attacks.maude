@@ -5,10 +5,10 @@ mod PNP-ATTACKS is
   
   
   op pnpAttacks : -> EMsgsSet .
-  eq pnpAttacks = getBadEvents('PNP-SCENARIO,pnpInitI(pnpInit(emsgStart),emsgI)) .
+  eq pnpAttacks = getBadEMsgs('PNP-SCENARIO,pnpInitI(pnpInit(emsgStart),emsgI)) .
 
   op pnpAttacks1 : -> EMsgsSet .
-  eq pnpAttacks1 = getBadEvents('PNP-SCENARIO,pnpInitI(pnpInit(emsgStart),emsgI emsgI1)) .
+  eq pnpAttacks1 = getBadEMsgs('PNP-SCENARIO,pnpInitI(pnpInit(emsgStart),emsgI emsgI1)) .
 
 endm
 eof

@@ -143,3 +143,128 @@ fmod FB-LIB is
 
 endfm  
 
+***(
+
+ 
+ctlx -- pauses at each round
+     start        atR          HasVac        
+ready ----> LOff -------> ROff ------->  ROn 
+  ^   goR         VacOn         goL       |   
+   \                                      |
+    \            NoVac         atL        |
+      <------- <------- LOn  <---------- <
+                 ready          VacOff  
+)
+
+fmod CONTROLX-FB is
+  inc FB .
+
+  op ctlx : -> FbC .
+  eq insFB(ctlx) = 
+       inEv("start") inEv("atL") inEv("atR") 
+       inEv("HasVac") inEv("NoVac")  .
+  eq outsFB(ctlx) = 
+       outEv("GoR") outEv("GoL") 
+       outEv("VacOn") outEv("VacOff")
+       outEv("ready") .
+  eq stsFB(ctlx) = st("ready") st("LOff") st("ROff") 
+                   st("ROn") st("LOn") .
+  eq trsFB(ctlx) = 
+     tr(st("ready"), st("LOff"), 
+       inEv("start") is ev("start"),
+       outEv("GoR") :~ ev("GoR"))
+     tr(st("LOff"), st("ROff"), 
+       inEv("atR") is ev("atR"),
+       outEv("VacOn") :~ ev("VacOn"))
+     tr(st("ROff"), st("ROn"), 
+       inEv("HasVac") is ev("HasVac"),
+       outEv("GoL") :~ ev("GoL"))
+     tr(st("ROn"), st("LOn"), 
+       inEv("atL") is ev("atL"),
+       outEv("VacOff") :~ ev("VacOff"))
+     tr(st("LOn"), st("readt"), 
+       inEv("NoVac") is ev("NoVac"),
+       outEv("ready") :~ ev("ready"))
+     .
+
+  op ctlxInit : Id -> FB .
+  eq ctlxInit(fbId:Id) =
+     [fbId:Id : ctlx | state : st("ready") ; ticked : false ;
+                      iEvEffs : none ; oEvEffs : none] .
+
+endfm
+
+***(
+coord
+         start         ready from ctlx_i
+   init -----------> inCycle -------->    init
+   start to ctlx_i           start
+
+)
+
+fmod PNP-COORD-FB is
+  inc FB .
+
+  op pnp-coord : -> FbC .
+  eq insFB(pnp-coord) = 
+       inEv("start") inEv("ready1")  inEv("ready2")   .
+  eq outsFB(pnp-coord) = 
+       outEv("start0") outEv("start1") outEv("start2") 
+ .
+  eq stsFB(pnp-coord) = st("init") st("wait12") 
+                        st("wait1") st("wait2") .
+  eq trsFB(pnp-coord) = 
+     tr(st("init"), st("wait12"), 
+       inEv("start") is ev("start"),
+       (outEv("start1") :~ ev("start"))
+       (outEv("start2") :~ ev("start"))) .
+        
+ eq trsFB(pnp-coord) = 
+    tr(st("wait12"), st("wait12"), 
+      inEv("ready1") is ev("ready")
+      and
+      inEv("ready2") is ev("ready"),
+      (outEv("start1") :~ ev("start"))
+      (outEv("start2") :~ ev("start"))) .
+        
+ eq trsFB(pnp-coord) = 
+    tr(st("wait12"), st("wait2"), 
+      inEv("ready1") is ev("ready")
+      and
+      not (inEv("ready2") is ev("ready")),
+       none) .
+
+ eq trsFB(pnp-coord) = 
+    tr(st("wait12"), st("wait1"), 
+      inEv("ready2") is ev("ready")
+      and
+      not (inEv("ready1") is ev("ready")),
+       (outEv("start1") :~ ev("start"))
+       (outEv("start2") :~ ev("start"))) .
+       
+ eq trsFB(pnp-coord) = 
+    tr(st("wait2"), st("wait12"), 
+      inEv("ready2") is ev("ready"),
+      (outEv("start1") :~ ev("start"))
+      (outEv("start2") :~ ev("start")) )   .
+       
+       
+       
+
+  op pnp-coordInit : Id -> FB .
+  eq pnp-coordInit(fbId:Id) =
+     [fbId:Id : pnp-coordInit | 
+      state : st("init") ; ticked : false ;
+                      iEvEffs : none ; oEvEffs : none] .
+                      
+                      
+endfm
+
+
+fmod FB-LIB-DUAL is
+  inc VACUMM-FB .
+  inc TRACK-FB  .
+  inc CONTROLX-FB .
+  inc PNP-COORD-FB .
+  
+endfm  
