@@ -27,21 +27,178 @@ coord
 NB if all branches don't send read in the same phase
 the application will halt in a dead state.
 
-More forgiving
 
-all lines ready -- as above
-                      ready
-all but 1  ---> wait1 -----> init
-                      start
-
-                      readyx2
-all but 2  ---> wait2 -----> init
-                      start
-                      ready
-                      -----> wait1
-.....
-
+         [ctlx1]               [ctlx2]
+      |ready  ^              ^          v ready
+      v       | start        | start     \
+       \       \            /             \
+       ready1   \start1    /start2 ready2  |
+        ---         [ coord ]     <- ------
+        
 intruder can cause a slow pnp to loose its start by sending
 causing coord to send prematurely
 maybe cause pnp delay to put in late state                      
 )
+
+mod PNP2-SCENARIO is
+  inc FB-LIB-DUAL .
+  inc APP-EXE .
+  
+  eq appLinks(id("pnp2")) = 
+  **** pnp1
+   {{id("vac1"),outEv("NoVac")}, {id("ctlx1"),inEv("NoVac")}}
+   {{id("vac1"),outEv("HasVac")},{id("ctlx1"),inEv("HasVac")}}
+   {{id("ctlx1"),outEv("VacOn")}, {id("vac1"), inEv("VacOn")}}
+   {{id("ctlx1"),outEv("VacOff")},{id("vac1"), inEv("VacOff")}} 
+   {{id("track1"),outEv("atR")}, {id("ctlx1"),inEv("atR")}}
+   {{id("track1"),outEv("atL")},{id("ctlx1"),inEv("atL")}}
+   {{id("ctlx1"),outEv("GoR")}, {id("track1"), inEv("GoR")}}
+   {{id("ctlx1"),outEv("GoL")}, {id("track1"), inEv("GoL")}}
+   {{id("track1"),outEv("GoR1")},{id("track1"), inEv("GoR1")}} 
+   {{id("track1"),outEv("GoL1")},{id("track1"), inEv("GoL1")}} 
+
+  **** pnp2
+   {{id("vac2"),outEv("NoVac")}, {id("ctlx2"),inEv("NoVac")}}
+   {{id("vac2"),outEv("HasVac")},{id("ctlx2"),inEv("HasVac")}}
+   {{id("ctlx2"),outEv("VacOn")}, {id("vac2"), inEv("VacOn")}}
+   {{id("ctlx2"),outEv("VacOff")},{id("vac2"), inEv("VacOff")}} 
+   {{id("track2"),outEv("atR")}, {id("ctlx2"),inEv("atR")}}
+   {{id("track2"),outEv("atL")}, {id("ctlx2"),inEv("atL")}}
+   {{id("ctlx2"),outEv("GoR")}, {id("track2"), inEv("GoR")}}
+   {{id("ctlx2"),outEv("GoL")}, {id("track2"), inEv("GoL")}}
+   {{id("track2"),outEv("GoR1")},{id("track2"), inEv("GoR1")}} 
+   {{id("track2"),outEv("GoL1")},{id("track2"), inEv("GoL1")}} 
+
+ **** coordinator
+   {{id("coord"),outEv("start1")}, {id("ctlx1"),inEv("start")}}
+   {{id("ctlx1"),outEv("ready")}, {id("coord"), inEv("ready1")}}
+ 
+   {{id("coord"),outEv("start2")}, {id("ctlx2"),inEv("start")}}
+   {{id("ctlx2"),outEv("ready")}, {id("coord"), inEv("ready2")}}
+ 
+   {{id("pnp2"), {id("coord"),inEv("start")}},
+                 {id("coord"),inEv("start")}}
+   .
+
+  ops pnp2Start emsgI emsgI1 : -> EMsg .
+  eq pnp2Start = {{id("coord"),inEv("start")}, ev("start")} .
+  eq emsgI = {{sid(10,1),sin(10,2)},sev(10,3)} .
+  eq emsgI1 = {{sid(20,1),sin(20,2)},sev(20,3)} .
+
+  eq appFBs(id("pnp2")) = 
+     id("vac1") id("track1") id("ctlx1") 
+     id("vac2") id("track2") id("ctlx2")
+     id("coord") .
+ 
+ op pnp2FBs : -> FBs .
+ eq pnp2FBs =
+     pnp-coordInit(id("coord"))  
+     vacInit(id("vac1")) 
+     trackInit(id("track1")) 
+     ctlxInit(id("ctlx1"))
+     vacInit(id("vac2")) 
+     trackInit(id("track2")) 
+     ctlxInit(id("ctlx2")) .
+
+ var emsg : EMsg .
+ var emsgs : EMsgs .    
+ vars vacFB trackFB ctlxFBa ctlxFBb : FB .
+ var fbs : FBs .
+ vars str str0 str1 : String . 
+ var n : Nat .
+
+ **** from fb-lib fbs have ticked = false, ready for trans
+   op pnp2Init : EMsg -> Application .
+   eq pnp2Init(emsg) = mkApp(id("pnp2"),pnp2FBs,emsg) .
+ 
+   op pnp2InitI : Application EMsgs -> AppIntruder .
+   eq pnp2InitI(app:Application,emsgs) = [app:Application,emsgs] .
+
+    op lastChar : String -> String .
+    ceq lastChar(str) = substr(str,n, s n) 
+      if s n := length(str) .
+    
+    eq lastChar(str) = "" [owise] .
+     
+    op samePnP : Id Id -> Bool .
+    eq samePnP(id(str0),id(str1)) 
+          = lastChar(str0) == lastChar(str1) .
+
+    op badState2 : FBs -> Bool .
+   ceq badState2(vacFB trackFB fbs) 
+    = true
+    if cidOf(vacFB) == vac 
+    /\ cidOf(trackFB) == track
+    /\ samePnP(idOf(vacFB),idOf(trackFB))
+    /\ (getState(vacFB) == st("off")
+        or getState(vacFB) == st("on-novac"))
+    /\ getState(trackFB) == st("mvL") .
+   eq badState2(fbs) = false [owise] .
+
+   op badState2 : Application -> Bool .
+   eq badState2(app:Application)
+    = badState2(getFBs(app:Application)) .
+
+   op badState2 : AppIntruder -> Bool .
+   eq badState2([app:Application,emsgs])
+    = badState2(getFBs(app:Application)) .
+
+
+**** ROff LOn
+    op badStateLOnROff : FBs -> Bool .
+   ceq badState2(ctlxFBa ctlxFBb fbs) 
+    = true
+    if cidOf(ctlxFBa) == ctlx 
+    /\ cidOf(ctlxFBb) == ctlx
+    /\ (getState(ctlxFBa) == st("LOn"))
+    /\ (getState(ctlxFBb) == st("ROff")) .
+   eq badStateLOnROff(fbs) = false [owise] .
+
+   op badStateLOnROff : Application -> Bool .
+   eq badStateLOnROff(app:Application)
+    = badStateLOnROff(getFBs(app:Application)) .
+
+   op badStateLOnROff : AppIntruder -> Bool .
+   eq badStateLOnROff([app:Application,emsgs])
+    = badStateLOnROff(getFBs(app:Application)) .
+
+
+endm   
+
+mod PNP2-ATTACKS is
+  inc PNP2-SCENARIO .
+  inc TRACE2ATTACKS .
+  
+  
+  op pnp2Attacks : -> EMsgsSet .
+  eq pnp2Attacks = getBadEMsgsX('PNP2-SCENARIO,'badState2,
+  pnp2InitI(pnp2Init(pnp2Start),emsgI)) .
+
+  op pnpLOnROff2Attacks : -> EMsgsSet .
+  eq pnp2Attacks = getBadEMsgsX('PNP2-SCENARIO,'badState2,
+  pnp2InitI(pnp2Init(pnp2Start),emsgI)) .
+
+endm
+
+eof
+
+red pnp2Init(pnp2Start) .
+set print attribute on .
+rew[1] pnp2Init(pnp2Start) .
+rew[30] pnp2Init(pnp2Start) .
+
+set print attribute off .
+red pnp2Attacks .
+
+Maude> red pnp2Attacks .
+reduce in PNP2-ATTACKS : pnp2Attacks .
+rewrites: 9064781 in 3489ms cpu (3493ms real) (2597633 rewrites/second)
+result EMsgsSet: 
+{{{id("ctlx1"),inEv("HasVac")},ev("HasVac")}} 
+{{{id("ctlx1"),inEv("atL")},ev("atL")}} 
+{{{id("track1"),inEv("GoL")},ev("GoL")}} 
+{{{id("vac1"),inEv("VacOff")},ev("VacOff")}} {{{id("ctlx2"),inEv("HasVac")},ev("HasVac")}}
+{{{id("ctlx2"),inEv("atL")},ev("atL")}} {{{id("track2"),inEv("GoL")},ev("GoL")}} 
+{{{id("vac2"),inEv("VacOff")},ev("VacOff")}}
+    
+    

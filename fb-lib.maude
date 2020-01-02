@@ -217,45 +217,35 @@ fmod PNP-COORD-FB is
      tr(st("init"), st("wait12"), 
        inEv("start") is ev("start"),
        (outEv("start1") :~ ev("start"))
-       (outEv("start2") :~ ev("start"))) .
-        
- eq trsFB(pnp-coord) = 
-    tr(st("wait12"), st("wait12"), 
-      inEv("ready1") is ev("ready")
+       (outEv("start2") :~ ev("start"))) 
+     tr(st("wait12"), st("wait12"), 
+      (inEv("ready1") is ev("ready"))
       and
-      inEv("ready2") is ev("ready"),
+      (inEv("ready2") is ev("ready")),
       (outEv("start1") :~ ev("start"))
-      (outEv("start2") :~ ev("start"))) .
-        
- eq trsFB(pnp-coord) = 
+      (outEv("start2") :~ ev("start")))
     tr(st("wait12"), st("wait2"), 
-      inEv("ready1") is ev("ready")
+      (inEv("ready1") is ev("ready"))
       and
-      not (inEv("ready2") is ev("ready")),
-       none) .
-
- eq trsFB(pnp-coord) = 
+      (not (inEv("ready2") is ev("ready"))),
+       none) 
     tr(st("wait12"), st("wait1"), 
-      inEv("ready2") is ev("ready")
+      (inEv("ready2") is ev("ready"))
       and
-      not (inEv("ready1") is ev("ready")),
+      (not (inEv("ready1") is ev("ready"))),
        (outEv("start1") :~ ev("start"))
-       (outEv("start2") :~ ev("start"))) .
-       
- eq trsFB(pnp-coord) = 
+       (outEv("start2") :~ ev("start"))) 
     tr(st("wait2"), st("wait12"), 
       inEv("ready2") is ev("ready"),
       (outEv("start1") :~ ev("start"))
       (outEv("start2") :~ ev("start")) )   .
        
-       
-       
 
   op pnp-coordInit : Id -> FB .
   eq pnp-coordInit(fbId:Id) =
-     [fbId:Id : pnp-coordInit | 
+     [fbId:Id : pnp-coord | 
       state : st("init") ; ticked : false ;
-                      iEvEffs : none ; oEvEffs : none] .
+      iEvEffs : none ; oEvEffs : none] .
                       
                       
 endfm

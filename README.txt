@@ -31,6 +31,10 @@ file. It includes a simple PickNPlace scenario with different
 deployments that are wrapped to protect against single message
 intruders. A sample run can be found in zruns-wrap.txt
 
+A more complex scenario, PnP2 can be loaded using load-pnp2.maude.
+This scenario has two copies of the PnP application synchronized
+by a coord function block.  A sample run can be found in zruns-pnp2-app.txt and the successful intruder attackes
+are computed at the end of pnp2-scenario.maude
 
 The file README-modules.txt contains a summary of the Maude modules
 along with their imports and defined sorts and operations/rules

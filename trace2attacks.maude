@@ -2,7 +2,7 @@ mod TRACE2ATTACKS is
 inc META-LEVEL .
 inc APP-EXE .
  
- var mname : Qid .
+ var mname pname : Qid .
  var module : Module .
  vars sres?? : [Trace?] .
  vars sres2?? : [ResultTriple?] .
@@ -36,19 +36,22 @@ op __ : EMsgsSet EMsgsSet -> EMsgsSet [ctor comm assoc id: none] .
 op mtAppInt : -> AppIntruder [ctor] .
 
 op getBadEMsgs :  Qid AppIntruder -> EMsgsSet .
-op getBadEMsgs$ :  Module Term Nat EMsgsSet -> EMsgsSet .
+op getBadEMsgsX :  Qid Qid AppIntruder -> EMsgsSet .
+op getBadEMsgs$ :  Module Qid Term Nat EMsgsSet -> EMsgsSet .
 
 eq getBadEMsgs(mname,appInt) = 
-  removeDup(
-      getBadEMsgs$([mname],upTerm(appInt),0,none)) .
+    getBadEMsgsX(mname,'badState,appInt) . 
 
-ceq getBadEMsgs$(module,appIntT,n,emSet) 
- = getBadEMsgs$(module,appIntT,s n,{emsgs0} emSet)
- if appIntL := toAppIntList$(module,appIntT,n) 
+eq getBadEMsgsX(mname,pname,appInt) =
+  removeDup(getBadEMsgs$([mname],pname,upTerm(appInt),0,none)) .
+
+ceq getBadEMsgs$(module,pname, appIntT,n,emSet) 
+ = getBadEMsgs$(module,pname,appIntT,s n,{emsgs0} emSet)
+ if appIntL := toAppIntList$(module,pname,appIntT,n) 
  /\ not (appIntL == mtAppInt)
  /\ emsgs0 := getEmsgIs(appIntL,none) .
 
- eq getBadEMsgs$(module,appIntT,n,emSet) = emSet [owise] .
+ eq getBadEMsgs$(module,pname,appIntT,n,emSet) = emSet [owise] .
 
 op removeDup : EMsgsSet  -> EMsgsSet .
 eq removeDup({emsgs0} {emsgs0} emSet) 
@@ -57,12 +60,12 @@ eq removeDup(emSet) = emSet [owise] .
 
 
 *** module, initialConf and search index
-op toAppIntList$ : Module Term Nat -> AppIntList .
-ceq toAppIntList$(module,appIntT,n) 
+op toAppIntList$ : Module Qid Term Nat -> AppIntList .
+ceq toAppIntList$(module,pname,appIntT,n) 
   =  appIntL ; appInt
   if sres?? := 
       metaSearchPath(module,appIntT,'a:AppIntruder,
-                     'badState['a:AppIntruder] = 'true.Bool, 
+                     pname['a:AppIntruder] = 'true.Bool, 
                      '+,unbounded,n) 
   /\ appIntL := if sres?? :: Trace then 
               toAppIntList$$(sres??,nil) else nil fi
@@ -70,7 +73,7 @@ ceq toAppIntList$(module,appIntT,n)
   *** get the last configuration              
   /\ sres2?? :=  
        metaSearch(module,appIntT,'a:AppIntruder,
-                 'badState['a:AppIntruder] = 'true.Bool, 
+                 pname['a:AppIntruder] = 'true.Bool, 
                  '+,unbounded,n)
   /\ appInt := if sres2?? :: ResultTriple 
      then downTerm(getTerm(sres2??),mtAppInt) 

@@ -181,6 +181,15 @@ fb-lib.maude
   fmod FB-LIB is inc VACUMM-FB . inc TRACK-FB . 
                  inc CONTROL-FB . inc BAD-CONTROL-FB .
 
+  fmod CONTROLX-FB is inc FB .
+    op ctlx : -> FbC .
+    eq4 insFB(ctlx) outsFB(ctlx) stsFB(ctlx) trsFB(ctlx)
+    op ctlxInit : Id -> FB .
+
+fmod FB-LIB-DUAL is inc VACUMM-FB . inc TRACK-FB  .
+                    inc CONTROLX-FB . inc PNP-COORD-FB .
+  
+
 pnp-scenario.maude
   mod PNP-SCENARIO is inc FB-LIB . inc APP-EXE .
     appLinks(id("pnp")) = 
@@ -273,6 +282,60 @@ sys.maude
     rl[sys-intruder]
     
 pnp-scenario-deployed.maude
+
+  fmod DEPLOY-APP is inc APPLICATION . inc SYSTEM .
+    op deployFBs : FBs Apps Map{Id,Id} -> Apps .
+    op emsg2imsg : Id EMsg Map{Id,Id}  -> Msgs .   --- 0 or 1
+
+  mod PNP-SCENARIO-DEPLOYED is inc SYS-EXE . inc PNP-SCENARIO .
+                               inc DEPLOY-APP .
+    ops msgStart msgI msgI1 : -> Msg .
+    ops Dev1 Dev2 Dev3 : -> Application .
+    op pnpD1-1Init : Msgs -> System .
+    op pnpDInitI : System Msgs -> SysIntruder .
+    op badState : System -> Bool .
+    op badState : SysIntruder -> Bool .
+    ops dPnP1-1 dPnP-vc-t : -> System .
+
+****** load-wrap
+
 wrap.maude
+
+  fmod WRAP-SYSTEM is inc APPLICATION . inc SYSTEM . inc POLICY .
+                      inc SIGNED-MESSAGES .
+    op addEMsgs : EMsgs EMsgs -> EMsgs .
+    op flattenEMsgsSet : EMsgsSet EMsgs -> EMsgs .
+    op wrap-sys : System EMsgsSet -> System .
+    op wrap-devs : Apps EMsgs Links Map{Id,Id} Apps -> Apps . 
+    op wrap-dev : Application EMsgs Links Map{Id,Id} 
+                 iPolicy oPolicy -> Application . 
+
 pnp-scenario-wrap.maude
+
+  mod PNP-SCENARIO-WRAP is inc PNP-SCENARIO-DEPLOYED . 
+                 inc TRACE2ATTACKS . inc WRAP-SYSTEM .
+    op pnpBad : -> EMsgsSet .
+    ops wPnP1-1 wPnP-vc-t : -> System .
+
+
+****** load-pnp2 
+
+pnp2-scenario.maude
+  mod PNP2-SCENARIO is inc FB-LIB-DUAL . inc APP-EXE .
+    ops pnp2Start emsgI emsgI1 : -> EMsg .
+    op pnp2FBs : -> FBs .
+    op pnp2Init : EMsg -> Application .
+    op pnp2InitI : Application EMsgs -> AppIntruder .
+    op badState2 : FBs -> Bool .
+    op badState2 : Application -> Bool .
+    op badState2 : AppIntruder -> Bool .
+    op badStateLOnROff : FBs -> Bool .
+    op badStateLOnROff : Application -> Bool .
+    op badStateLOnROff : AppIntruder -> Bool .
+
+  mod PNP2-ATTACKS is inc PNP2-SCENARIO . inc TRACE2ATTACKS .
+    op pnp2Attacks : -> EMsgsSet .
+    op pnpLOnROff2Attacks : -> EMsgsSet .
+    
+
 
