@@ -1,0 +1,186 @@
+Maude> red pnp2Init(pnp2Start) .
+reduce in PNP2-ATTACKS : pnp2Init(pnp2Start) .
+rewrites: 11 in 0ms cpu (0ms real) (282051 rewrites/second)
+result Application:
+[id("pnp2") | fbs : ([id("coord") : pnp-coord | state : st("init") ;
+	iEvEffs : none ;
+	oEvEffs : none ;
+	ticked : false] [id("ctlx1") : ctlx | state : st("ready") ;
+	iEvEffs : none ;
+	oEvEffs : none ;
+	ticked : false] [id("ctlx2") : ctlx | state : st("ready") ;
+	iEvEffs : none ;
+	oEvEffs : none ;
+	ticked : false] [id("track1") : track | state : st("L") ;
+	iEvEffs : none ;
+	oEvEffs : none ;
+	ticked : false] [id("track2") : track | state : st("L") ;
+	iEvEffs : none ;
+	oEvEffs : none ;
+	ticked : false] [id("vac1") : vac | state : st("off") ;
+	iEvEffs : none ;
+	oEvEffs : none ;
+	ticked : false] [id("vac2") : vac | state : st("off") ;
+	iEvEffs : none ;
+	oEvEffs : none ;
+	ticked : false]) ;
+	iEMsgs : {{id("coord"),inEv("start")},ev("start")} ;
+	oEMsgs : none ;
+	ssbs : none]
+
+
+Maude> rew[40] pnp2Init(pnp2Start) .
+rewrite [40] in PNP2-ATTACKS : pnp2Init(pnp2Start) .
+
+app-exe1: emsgs0 = {{id("coord"),inEv("start")},ev("start")}
+
+app-exe2: tick = false
+  id = id("pnp2")
+  emsgs0 = {{id("ctlx1"),inEv("start")},ev("start")} {{id("ctlx2"),inEv(
+    "start")},ev("start")}
+
+app-exe1: emsgs0 = {{id("ctlx1"),inEv("start")},ev("start")}
+
+app-exe1: emsgs0 = {{id("ctlx2"),inEv("start")},ev("start")}
+
+app-exe2: tick = false
+  id = id("pnp2")
+  emsgs0 = {{id("track1"),inEv("GoR")},ev("GoR")} {{id("track2"),inEv("GoR")},
+    ev("GoR")}
+
+app-exe1: emsgs0 = {{id("track1"),inEv("GoR")},ev("GoR")}
+
+app-exe1: emsgs0 = {{id("track2"),inEv("GoR")},ev("GoR")}
+
+app-exe2: tick = false
+  id = id("pnp2")
+  emsgs0 = {{id("track1"),inEv("GoR1")},ev("GoR1")} {{id("track2"),inEv(
+    "GoR1")},ev("GoR1")}
+
+app-exe1: emsgs0 = {{id("track1"),inEv("GoR1")},ev("GoR1")}
+
+app-exe1: emsgs0 = {{id("track2"),inEv("GoR1")},ev("GoR1")}
+
+app-exe2: tick = false
+  id = id("pnp2")
+  emsgs0 = {{id("ctlx1"),inEv("atR")},ev("atR")} {{id("ctlx2"),inEv("atR")},ev(
+    "atR")}
+
+app-exe1: emsgs0 = {{id("ctlx1"),inEv("atR")},ev("atR")}
+
+app-exe1: emsgs0 = {{id("ctlx2"),inEv("atR")},ev("atR")}
+
+app-exe2: tick = false
+  id = id("pnp2")
+  emsgs0 = {{id("vac1"),inEv("VacOn")},ev("VacOn")} {{id("vac2"),inEv(
+    "VacOn")},ev("VacOn")}
+
+app-exe1: emsgs0 = {{id("vac1"),inEv("VacOn")},ev("VacOn")}
+
+app-exe1: emsgs0 = {{id("vac2"),inEv("VacOn")},ev("VacOn")}
+
+app-exe2: tick = false
+  id = id("pnp2")
+  emsgs0 = {{id("ctlx1"),inEv("HasVac")},ev("HasVac")} {{id("ctlx2"),inEv(
+    "HasVac")},ev("HasVac")}
+
+app-exe1: emsgs0 = {{id("ctlx1"),inEv("HasVac")},ev("HasVac")}
+
+app-exe1: emsgs0 = {{id("ctlx2"),inEv("HasVac")},ev("HasVac")}
+
+app-exe2: tick = false
+  id = id("pnp2")
+  emsgs0 = {{id("track1"),inEv("GoL")},ev("GoL")} {{id("track2"),inEv("GoL")},
+    ev("GoL")}
+
+app-exe1: emsgs0 = {{id("track1"),inEv("GoL")},ev("GoL")}
+
+app-exe1: emsgs0 = {{id("track2"),inEv("GoL")},ev("GoL")}
+
+app-exe2: tick = false
+  id = id("pnp2")
+  emsgs0 = {{id("track1"),inEv("GoL1")},ev("GoL1")} {{id("track2"),inEv(
+    "GoL1")},ev("GoL1")}
+
+app-exe1: emsgs0 = {{id("track1"),inEv("GoL1")},ev("GoL1")}
+
+app-exe1: emsgs0 = {{id("track2"),inEv("GoL1")},ev("GoL1")}
+
+app-exe2: tick = false
+  id = id("pnp2")
+  emsgs0 = {{id("ctlx1"),inEv("atL")},ev("atL")} {{id("ctlx2"),inEv("atL")},ev(
+    "atL")}
+
+app-exe1: emsgs0 = {{id("ctlx1"),inEv("atL")},ev("atL")}
+
+app-exe1: emsgs0 = {{id("ctlx2"),inEv("atL")},ev("atL")}
+
+app-exe2: tick = false
+  id = id("pnp2")
+  emsgs0 = {{id("vac1"),inEv("VacOff")},ev("VacOff")} {{id("vac2"),inEv(
+    "VacOff")},ev("VacOff")}
+
+app-exe1: emsgs0 = {{id("vac1"),inEv("VacOff")},ev("VacOff")}
+
+app-exe1: emsgs0 = {{id("vac2"),inEv("VacOff")},ev("VacOff")}
+
+app-exe2: tick = false
+  id = id("pnp2")
+  emsgs0 = {{id("ctlx1"),inEv("NoVac")},ev("NoVac")} {{id("ctlx2"),inEv(
+    "NoVac")},ev("NoVac")}
+
+app-exe1: emsgs0 = {{id("ctlx1"),inEv("NoVac")},ev("NoVac")}
+
+app-exe1: emsgs0 = {{id("ctlx2"),inEv("NoVac")},ev("NoVac")}
+
+app-exe2: tick = false
+  id = id("pnp2")
+  emsgs0 = {{id("coord"),inEv("ready1")},ev("ready")} {{id("coord"),inEv(
+    "ready2")},ev("ready")}
+
+app-exe1: emsgs0 = {{id("coord"),inEv("ready1")},ev("ready")} {{id("coord"),
+    inEv("ready2")},ev("ready")}
+
+app-exe2: tick = false
+  id = id("pnp2")
+  emsgs0 = {{id("ctlx1"),inEv("start")},ev("start")} {{id("ctlx2"),inEv(
+    "start")},ev("start")}
+
+app-exe2: tick = false
+  id = id("pnp2")
+  emsgs0 = (none).EMsgs
+
+app-exe2: tick = false
+  id = id("pnp2")
+  emsgs0 = (none).EMsgs
+
+app-exe2: tick = false
+  id = id("pnp2")
+  emsgs0 = (none).EMsgs
+rewrites: 23504 in 16ms cpu (16ms real) (1461873 rewrites/second)
+result Application:
+[id("pnp2") | fbs : ([id("coord") : pnp-coord | state : st("wait12") ;
+	iEvEffs : none ;
+	oEvEffs : none ;
+	ticked : false] [id("ctlx1") : ctlx | state : st("readt") ;
+	iEvEffs : none ;
+	oEvEffs : none ;
+	ticked : false] [id("ctlx2") : ctlx | state : st("readt") ;
+	iEvEffs : none ;
+	oEvEffs : none ;
+	ticked : false] [id("track1") : track | state : st("L") ;
+	iEvEffs : none ;
+	oEvEffs : none ;
+	ticked : false] [id("track2") : track | state : st("L") ;
+	iEvEffs : none ;
+	oEvEffs : none ;
+	ticked : false] [id("vac1") : vac | state : st("off") ;
+	iEvEffs : none ;
+	oEvEffs : none ;
+	ticked : false] [id("vac2") : vac | state : st("off") ;
+	iEvEffs : none ;
+	oEvEffs : none ;
+	ticked : false]) ;
+	iEMsgs : none ;
+	oEMsgs : none ;
+	ssbs : none]

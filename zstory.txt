@@ -1,0 +1,20 @@
+Increase of automation and smart components in industry.
+Captured as Industry 4.0.
+Standard xxx for designs -- application and deployment
+Tools such as 4diac or autofocus for developing (compliant)
+designs
+using graphical interface.
+Security study outlines attacks of concern and security
+practices.
+But little in the way of formal specification and analysis.
+
+In this paper we present a formal framework for specifying
+I4.0 applications and analyzing safety and security properties
+using the Maude system and environment. 
+The development process from application to deployment 
+to distributed system is captured by theory transformations
+with associated theorems showing that much of the analysis
+(safety and security) can be carried out at the abstract
+application level.
+
+
