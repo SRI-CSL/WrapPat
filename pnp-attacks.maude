@@ -14,11 +14,14 @@ endm
 eof
 
 red pnpAttacks .
-result EMsgsSet: {{{id("ctl"),inEv("HasVac")},ev("HasVac")}} 
+reduce in PNP-ATTACKS : pnpAttacks .
+rewrites: 335833 in 145ms cpu (146ms real) (2308336 
+result EMsgsSet:
+{{{id("ctl"),inEv("HasVac")},ev("HasVac")}} 
 {{{id("ctl"),inEv("atL")},ev("atL")}} {{{id("track"),inEv("GoL")},ev("GoL")}} 
 {{{id("vac"),inEv("VacOff")},ev("VacOff")}}
 
-
+    
 {{sport(0,1),{dev1,{vac,inEv("VacOff")}},ev("VacOff")}} 
 {{sport(0, 1),{dev2,{track,inEv("GoL")}},ev("GoL")}} 
 {{sport(0, 1),{dev3,{ctl,inEv("HasVac")}},ev("HasVac")}} {{sport(0, 1),{dev3,{ctl,inEv("atL")}}, ev("atL")}}

@@ -1,4 +1,4 @@
-maude load.maude
+maude load-pnp.maude
 select PNP-SCENARIO .
 rew [20] pnpInit(emsgStart) .
 rewrite [20] in PNP-SCENARIO : pnpInit(emsgStart) .
@@ -77,3 +77,8 @@ result Application:
 	iEMsgs : {{id("ctl"),inEv("NoVac")},ev("NoVac")} ;
 	oEMsgs : none ;
 	ssbs : none]
+  
+  
+  
+
+  
