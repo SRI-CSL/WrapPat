@@ -1,6 +1,7 @@
-mod TRACE2ATTACKS is
+fmod TRACE2ATTACKS is
 inc META-LEVEL .
-inc APP-EXE .
+**** inc APP-EXE .
+inc APPLICATION .
  
  var mname pname : Qid .
  var module : Module .
@@ -107,4 +108,4 @@ ceq getDelivered(emsg emsgs1,ssbs,emsgs0) =
            
 eq getDelivered(none,ssbs,emsgs0) = emsgs0 .
 
-endm
+endfm
