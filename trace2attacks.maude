@@ -28,17 +28,11 @@ op nil : -> AppIntList [ctor] .
 op _;_ : AppIntList AppIntList 
             -> AppIntList [ctor assoc id: nil] .
 
-***(
-sort EMsgsSet .
-op none : -> EMsgsSet .
-op {_} : EMsgs -> EMsgsSet [ctor] .
-op __ : EMsgsSet EMsgsSet -> EMsgsSet [ctor comm assoc id: none] .
-)
 op mtAppInt : -> AppIntruder [ctor] .
 
 op getBadEMsgs :  Qid AppIntruder -> EMsgsSet .
-op getBadEMsgsX :  Qid Qid AppIntruder -> EMsgsSet .
-op getBadEMsgs$ :  Module Qid Term Nat EMsgsSet -> EMsgsSet .
+op getBadEMsgsX :  Qid Qid AppIntruder -> EMsgsSet [memo] .
+op getBadEMsgs$ :  Module Qid Term Nat EMsgsSet -> EMsgsSet [memo] .
 
 eq getBadEMsgs(mname,appInt) = 
     getBadEMsgsX(mname,'badState,appInt) . 

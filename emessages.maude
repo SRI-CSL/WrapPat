@@ -7,9 +7,12 @@ fmod EMESSAGES is
   vars ev ev1 : Event .
   var in : InEv  .
   var out : OutEv .
-  var emsg : EMsg .
+  vars emsg  emsg0 : EMsg .
   vars emsgs emsgs0 emsgs1 : EMsgs .
-
+  var emsgss :  EMsgsSet .
+  var emsgssl : EMsgssList .
+  var n : Nat .
+  
   sorts EMsg EMsgs .
   subsort EMsg < EMsgs .
   op none : -> EMsgs .
@@ -37,10 +40,64 @@ fmod EMESSAGES is
   eq size(emsg emsgs) = s(size(emsgs)) .
   eq size((none).EMsgs) = 0 .
 
+  op intersect : EMsgs EMsgs -> EMsgs .
+  op intersect$ : EMsgs EMsgs EMsgs -> EMsgs .
+  eq intersect(emsgs0,emsgs1) = intersect$(emsgs0,emsgs1,none) .
+  eq intersect$(emsg emsgs0,emsg emsgs1,emsgs)
+        = intersect$(emsgs0, emsgs1,emsgs emsg) .
+  eq intersect$(emsgs0,emsgs1,emsgs) = emsgs [owise] .
+  
+  op subset : EMsgs EMsgs -> Bool .
+  op intersect$ : EMsgs EMsgs EMsgs -> EMsgs .
+  eq subset(emsg emsgs0,emsg emsgs1) = subset(emsgs0, emsgs1) .
+  eq subset(none,emsgs1) = true .
+  eq subset(emsgs0,emsgs1) = false [owise] .
+  
+ 
   sort EMsgsSet .
   op none : -> EMsgsSet .
   op {_} : EMsgs -> EMsgsSet [ctor] .
   op __ : EMsgsSet EMsgsSet -> EMsgsSet [ctor comm assoc id: none] .
 
+  op size : EMsgsSet -> Nat .
+  eq size({emsgs} emsgss) = s(size(emsgss)) .
+  eq size((none).EMsgsSet) = 0 .
+
+
+ op addEMsgs : EMsgs EMsgs -> EMsgs .
+ ceq addEMsgs(emsgs, emsgs0 emsg) =
+      addEMsgs(emsgs emsgs1, emsgs0) 
+ if emsgs1 := (if mem(emsgs,emsg) then none else emsg fi) .     
+ eq addEMsgs(emsgs, none) = emsgs .
+      
+
+ op flattenEMsgsSet : EMsgsSet EMsgs -> EMsgs .
+ eq flattenEMsgsSet(none,emsgs) = emsgs .
+ eq flattenEMsgsSet({emsgs0} emsgss,emsgs) = 
+     flattenEMsgsSet(emsgss,addEMsgs(emsgs,emsgs0)) .
+
+**** lists of emsgs sets, the intent is each list element
+**** has sets of the same size
+  sort EMsgssList .
+  op nil : -> EMsgssList .
+  op [_] : EMsgsSet -> EMsgssList [ctor] .
+  op _;_ : EMsgssList EMsgssList -> EMsgssList [ctor assoc id: nil] .
+
+  op len : EMsgssList -> Nat .
+  op len$ : EMsgssList Nat -> Nat .
+
+  eq len(emsgssl) = len$(emsgssl,0) .
+  eq len$([emsgss] ; emsgssl,n) =  len$(emsgssl, s n) .
+  eq len$((nil).EMsgssList,n) = n .
+
+  op getNth : EMsgssList Nat -> EMsgsSet .
+  eq getNth([emsgss] ; emsgssl,0) = emsgss .
+  eq getNth([emsgss] ; emsgssl,s n) =   getNth(emsgssl, n) .
+****  eq getNth(emsgssl, n) = none [owise] .
+
+ op flattenEMsgssList : EMsgssList EMsgs -> EMsgs .
+ eq flattenEMsgssList(nil,emsgs) = emsgs .
+ eq flattenEMsgssList([emsgss] ; emsgssl,emsgs) = 
+      flattenEMsgssList(emsgssl,flattenEMsgsSet(emsgss,emsgs)) .
 
 endfm

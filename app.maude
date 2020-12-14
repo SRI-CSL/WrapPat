@@ -160,6 +160,7 @@ var b tick : Bool .
      mkMsg$(fbId,(outEv :~ ev),links,none,none) .
 
   **** clt thinks there should be one link for any fb port
+  **** vivek says an output may link to mulitple inputs
   eq mkMsg$(fbId,(outEv :~ ev),
   {{fbId,outEv},port} links, emsgs0,emsgs1) 
   = if (portIO(port) :: OutEv)

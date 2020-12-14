@@ -1,0 +1,308 @@
+***(
+      VacOn         
+  off ----->  on/on-novac 
+   hasVac/noVac
+  
+    VacOff          atL
+  ---------> atLQ ------> off
+                   NoVac
+
+    atL            VacOff 
+  ---------> atLT ------> off
+              
+
+)
+
+fmod VACUMM-FB is
+  inc FB .
+
+  op vac : -> FbC .
+  eq insFB(vac) = inEv("VacOn") inEv("VacOff") inEv("atL") .
+  eq outsFB(vac) = outEv("NoVac") outEv("HasVac") .
+  eq stsFB(vac) = st("off") st("on") st("atLQ") st("atLT").
+  eq trsFB(vac) = tr(st("on"), st("atLQ"), 
+                     inEv("VacOff") is ev("VacOff"),
+                     (none).OutEvEffs)
+                  tr(st("on-novac"), st("atLQ"), 
+                     inEv("VacOff") is ev("VacOff"),
+                     (none).OutEvEffs)
+                  tr(st("atLQ"), st("off"), 
+                     inEv("atL") is ev("atL"),
+                     outEv("NoVac") :~ ev("NoVac"))   
+
+                  tr(st("on"), st("atLT"), 
+                     inEv("atL") is ev("atL"),
+                     (none).OutEvEffs)
+                  tr(st("on-novac"), st("atLT"), 
+                     inEv("atL") is ev("atL"),
+                     (none).OutEvEffs)
+                  tr(st("atLT"), st("off"), 
+                     inEv("VacOff") is ev("VacOff"),
+                     outEv("NoVac") :~ ev("NoVac"))   
+                     
+                  tr(st("off"), st("on-novac"), 
+                     inEv("VacOn") is ev("VacOn"),
+                     outEv("NoVac") :~ ev("NoVac"))
+                  tr(st("off"), st("on"), 
+                     inEv("VacOn") is ev("VacOn"),
+                     outEv("HasVac") :~ ev("HasVac")) .
+
+  op vacInit : Id -> FB .
+  eq vacInit(fbId:Id) =
+     [fbId:Id : vac | state : st("off") ; ticked : false ;
+                      iEvEffs : none ; oEvEffs : none] .
+endfm
+
+fmod TRACK-FB is
+  inc FB .
+
+  op track : -> FbC .
+  eq insFB(track) = inEv("GoR") inEv("GoL")  inEv("GoR1")  inEv("GoL1") .
+  eq outsFB(track) = outEv("atR") outEv("atL") outEv("GoR1") outEv("GoL1") .
+  eq stsFB(track) = st("L") st("mvR") st("R") st("mvL") .
+  eq trsFB(track) = 
+     tr(st("L"), st("mvR"), 
+       inEv("GoR") is ev("GoR"),
+       outEv("GoR1") :~ ev("GoR1"))
+     tr(st("mvR"), st("R"), 
+       inEv("GoR1") is ev("GoR1"),
+       outEv("atR") :~ ev("atR"))
+     tr(st("R"), st("mvL"), 
+       inEv("GoL") is ev("GoL"),
+       outEv("GoL1") :~ ev("GoL1"))
+     tr(st("mvL"), st("L"), 
+       inEv("GoL1") is ev("GoL1"),
+       outEv("atL") :~ ev("atL")) .
+
+  op trackInit : Id -> FB .
+  eq trackInit(fbId:Id) =
+     [fbId:Id : track | state : st("L") ; ticked : false ;
+                      iEvEffs : none ; oEvEffs : none] .
+endfm
+
+***(
+                                      goL
+                                    -------- vOn?   hasVac/noVac
+       goR           goR1         /               \     goL1
+   L --------> mvR --------->   R             gL1  mvL ------>  L ...
+       goR1          atR          \               /     atL  
+                                    -------- vOnT  goL
+                                    hasVac/noVac
+
+)
+
+
+fmod TRACK-FB1 is
+  inc FB .
+
+  op track : -> FbC .
+  eq insFB(track) = inEv("GoR") inEv("GoL")  inEv("GoR1")  inEv("GoL1")
+                     inEv("HasVac")  inEv("noVac") .
+  eq outsFB(track) = outEv("atR") outEv("atL") 
+                     outEv("GoR1") outEv("GoL1") .
+  eq stsFB(track) = st("L") st("mvR") st("R") st("mvL")
+                    st("vOnQ") st("vOnT") .
+  eq trsFB(track) = 
+     tr(st("L"), st("mvR"), 
+       inEv("GoR") is ev("GoR"),
+       outEv("GoR1") :~ ev("GoR1"))
+     tr(st("mvR"), st("R"), 
+       inEv("GoR1") is ev("GoR1"),
+       outEv("atR") :~ ev("atR"))
+
+     tr(st("R"), st("vOnQ"), 
+       inEv("GoL") is ev("GoL"),
+       (none).OutEvEffs)
+     tr(st("R"), st("vOnT"), 
+       inEv("HasVac") is ev("HasVac"),
+       (none).OutEvEffs)
+     tr(st("R"), st("vOnT"), 
+       inEv("noVac") is ev("noVac"),
+      (none).OutEvEffs)
+
+     tr(st("vOnT"), st("mvL"), 
+       inEv("GoL") is ev("GoL"),
+       outEv("GoL1") :~ ev("GoL1"))
+     tr(st("vOnQ"), st("mvL"), 
+       inEv("noVac") is ev("noVac"),
+       outEv("GoL1") :~ ev("GoL1"))
+     tr(st("vOnQ"), st("mvL"), 
+       inEv("HasVac") is ev("HasVac"),
+       outEv("GoL1") :~ ev("GoL1"))
+
+     tr(st("mvL"), st("L"), 
+       inEv("GoL1") is ev("GoL1"),
+       outEv("atL") :~ ev("atL")) .
+
+  op trackInit : Id -> FB .
+  eq trackInit(fbId:Id) =
+     [fbId:Id : track | state : st("L") ; ticked : false ;
+                      iEvEffs : none ; oEvEffs : none] .
+endfm
+
+fmod CONTROL-FB is
+  inc FB .
+
+  op ctl : -> FbC .
+  eq insFB(ctl) = 
+       inEv("start") inEv("atL") inEv("atR") 
+       inEv("HasVac") inEv("NoVac")  .
+  eq outsFB(ctl) = 
+       outEv("GoR") outEv("GoL") 
+       outEv("VacOn") outEv("VacOff")  .
+       
+  eq stsFB(ctl) = st("init") st("LOff") st("ROff") 
+                 st("ROn") st("LOn") .
+  eq trsFB(ctl) = 
+     tr(st("init"), st("LOff"), 
+       inEv("start") is ev("start"),
+       outEv("GoR") :~ ev("GoR"))
+     tr(st("LOff"), st("ROff"), 
+       inEv("atR") is ev("atR"),
+       outEv("VacOn") :~ ev("VacOn"))
+     tr(st("ROff"), st("ROn"), 
+       inEv("HasVac") is ev("HasVac"),
+       outEv("GoL") :~ ev("GoL"))
+     tr(st("ROn"), st("LOn"), 
+       inEv("atL") is ev("atL"),
+       outEv("VacOff") :~ ev("VacOff"))
+     tr(st("LOn"), st("init"), 
+       inEv("NoVac") is ev("NoVac"),
+       outEv("start") :~ ev("start"))
+       .
+
+  op ctlInit : Id -> FB .
+  eq ctlInit(fbId:Id) =
+     [fbId:Id : ctl | state : st("init") ; ticked : false ;
+                      iEvEffs : none ; oEvEffs : none] .
+
+endfm
+
+
+fmod FB-LIB is
+  inc VACUMM-FB .
+  inc TRACK-FB  .
+  inc CONTROL-FB .
+endfm  
+
+fmod FB-LIB1 is
+  inc VACUMM-FB .
+  inc TRACK-FB1  .
+  inc CONTROL-FB .
+endfm  
+
+***(
+
+ 
+ctlx -- pauses at each round
+     start        atR          HasVac        
+ready ----> LOff -------> ROff ------->  ROn 
+  ^   goR         VacOn         goL       |   
+   \                                      |
+    \            NoVac         atL        |
+      <------- <------- LOn  <---------- <
+                 ready          VacOff  
+)
+
+fmod CONTROLX-FB is
+  inc FB .
+
+  op ctlx : -> FbC .
+  eq insFB(ctlx) = 
+       inEv("start") inEv("atL") inEv("atR") 
+       inEv("HasVac") inEv("NoVac")  .
+  eq outsFB(ctlx) = 
+       outEv("GoR") outEv("GoL") 
+       outEv("VacOn") outEv("VacOff")
+       outEv("ready") .
+  eq stsFB(ctlx) = st("ready") st("LOff") st("ROff") 
+                   st("ROn") st("LOn") .
+  eq trsFB(ctlx) = 
+     tr(st("ready"), st("LOff"), 
+       inEv("start") is ev("start"),
+       outEv("GoR") :~ ev("GoR"))
+     tr(st("LOff"), st("ROff"), 
+       inEv("atR") is ev("atR"),
+       outEv("VacOn") :~ ev("VacOn"))
+     tr(st("ROff"), st("ROn"), 
+       inEv("HasVac") is ev("HasVac"),
+       outEv("GoL") :~ ev("GoL"))
+     tr(st("ROn"), st("LOn"), 
+       inEv("atL") is ev("atL"),
+       outEv("VacOff") :~ ev("VacOff"))
+     tr(st("LOn"), st("ready"), 
+       inEv("NoVac") is ev("NoVac"),
+       outEv("ready") :~ ev("ready"))
+     .
+
+  op ctlxInit : Id -> FB .
+  eq ctlxInit(fbId:Id) =
+     [fbId:Id : ctlx | state : st("ready") ; ticked : false ;
+                      iEvEffs : none ; oEvEffs : none] .
+
+endfm
+
+***(
+coord
+         start         ready from ctlx_i
+   init -----------> inCycle -------->    init
+   start to ctlx_i           start
+
+)
+
+fmod PNP-COORD-FB is
+  inc FB .
+
+  op pnp-coord : -> FbC .
+  eq insFB(pnp-coord) = 
+       inEv("start") inEv("ready1")  inEv("ready2")   .
+  eq outsFB(pnp-coord) = 
+       outEv("start0") outEv("start1") outEv("start2") 
+ .
+  eq stsFB(pnp-coord) = st("init") st("wait12") 
+                        st("wait1") st("wait2") .
+  eq trsFB(pnp-coord) = 
+     tr(st("init"), st("wait12"), 
+       inEv("start") is ev("start"),
+       (outEv("start1") :~ ev("start"))
+       (outEv("start2") :~ ev("start"))) 
+     tr(st("wait12"), st("wait12"), 
+      (inEv("ready1") is ev("ready"))
+      and
+      (inEv("ready2") is ev("ready")),
+      (outEv("start1") :~ ev("start"))
+      (outEv("start2") :~ ev("start")))
+    tr(st("wait12"), st("wait2"), 
+      (inEv("ready1") is ev("ready"))
+      and
+      (not (inEv("ready2") is ev("ready"))),
+       none) 
+    tr(st("wait12"), st("wait1"), 
+      (inEv("ready2") is ev("ready"))
+      and
+      (not (inEv("ready1") is ev("ready"))),
+       (outEv("start1") :~ ev("start"))
+       (outEv("start2") :~ ev("start"))) 
+    tr(st("wait2"), st("wait12"), 
+      inEv("ready2") is ev("ready"),
+      (outEv("start1") :~ ev("start"))
+      (outEv("start2") :~ ev("start")) )   .
+       
+
+  op pnp-coordInit : Id -> FB .
+  eq pnp-coordInit(fbId:Id) =
+     [fbId:Id : pnp-coord | 
+      state : st("init") ; ticked : false ;
+      iEvEffs : none ; oEvEffs : none] .
+                      
+                      
+endfm
+
+
+fmod FB-LIB-DUAL is
+  inc VACUMM-FB .
+  inc TRACK-FB1  .
+  inc CONTROLX-FB .
+  inc PNP-COORD-FB .
+  
+endfm  

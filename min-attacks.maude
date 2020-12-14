@@ -1,0 +1,354 @@
+fmod MIN-ATTACKS is
+  inc TRACE2ATTACKS .
+  
+ vars n n0 n1 i j l : Nat .
+ vars emsgs0 emsgs1 emsgs AMckAll : EMsgs .
+ vars emsg0 emsg1 emsg : EMsg .
+ vars emsgss emsgss0 emsgss1 AMck AM AMnew AMnew1 : EMsgsSet .
+ vars emsgssl emsgsslnew emsgssl0 emsgssl1 : EMsgssList .
+ vars emnl emnl1 : EMsgNatL .
+ vars ememls emsgsemls emsgsemls0 emsgsemls2 emsgsemls1
+        :  EMsgsEMLs .
+ 
+***(
+**** eml[j] -- the emsg sets of size j+1 from input
+ op emsgsSet2emsgsList : EMsgsSet  ->  EMsgssList .
+**** non-minimal attack sets removed
+ op pruneEMsgss : EMsgssList -> EMsgssList .
+
+**** emsgs with max occ count
+  op collectMxEMsg : EMsgNatL -> EMsgs .
+
+*** [emsg,n] st emsg occurs in n emsgsets in emsgssl 
+*** the first element give max count
+  op emssl2emns : EMsgssList  -> EMsgNatL .
+
+)
+  op monus : Nat Nat -> Nat .
+  eq monus(i,j) =
+     (if (i < j) then 0 else sd(i,j) fi) .
+     
+****              modname  predname
+**** op getBadEMsgsX :  Qid Qid AppIntruder -> EMsgsSet .
+
+**** eml[j] -- the emsg sets of size j from input
+ op emsgsSet2emsgsList : EMsgsSet  ->  EMsgssList .
+****          cur cursize  bigger   lesser
+ op emsgsSet2emsgsList$ : 
+      EMsgsSet Nat EMsgsSet EMsgsSet EMsgssList 
+         ->  EMsgssList .
+ eq  emsgsSet2emsgsList(emsgss) 
+      = emsgsSet2emsgsList$(emsgss,0,none,none, nil) .
+
+  eq emsgsSet2emsgsList$({emsgs} emsgss,n,emsgss1,
+                         emsgss0,emsgssl)    
+   = (if size(emsgs) == s n
+      then emsgsSet2emsgsList$(emsgss,n,emsgss1 {emsgs},
+                               emsgss0,emsgssl)  
+      else emsgsSet2emsgsList$(emsgss,n,emsgss1,
+                               emsgss0 {emsgs},emsgssl)  
+      fi) .
+
+  eq emsgsSet2emsgsList$(none,n,emsgss1, 
+                        {emsgs} emsgss0,emsgssl)   
+        = emsgsSet2emsgsList$({emsgs} emsgss0,s n,none,none,
+                              emsgssl ; [emsgss1])  .
+  eq emsgsSet2emsgsList$(none,n,emsgss1, none,emsgssl)    
+     = emsgssl ; [emsgss1]  .
+
+**** remove emsgs of size j that contain a set of size i < j 
+***(
+input EML : EMsgssList -- ranked
+EMLnew = EML[0] -- size 1
+for j = 2 ... len(EML)
+  AM = EML[j-1] --- next level to prune
+  AMnew = none --- survivors
+  for emsgs0 in AM does it survive
+    for i = 1 ... j-1
+      AMck = EML[i-1]   --- size i 
+      AMckAll = flatten(AMck,none)
+         if emsgsSubsumed(emsgs0,AMckAll,AMck,i)
+         emsgs0 fails go to next elt of AM
+    end for i
+    emsgs0 survives add to AMnew.
+   end for emsgs0 
+    add AMnew to EMLnew level j (index j-1)  
+ end for j 
+ return EMLnew    
+)
+
+
+***** does emsgs contain an element of EMsgsSet
+***** if intersect with UEMsgsSet is < Nat then not
+***** since all elements of EMsgsSet have size Nat
+
+
+**** return emsgssl st emsgs of rank j do not contain emsgs0 of 
+**** rank less than j
+ op pruneEMsgss : EMsgssList -> EMsgssList .
+***** for j   eml j emlnew 
+ op pruneEMsgss$ : EMsgssList Nat Nat EMsgssList -> EMsgssList .
+***** for i    eml j i emsgss-i emsgss-i-flat
+ op pruneEMsgss$$ : 
+   EMsgssList Nat Nat EMsgssList EMsgsSet EMsgsSet 
+    -> EMsgssList .
+   
+ ceq pruneEMsgss(emsgssl) =
+    (if l > 1 
+    then pruneEMsgss$(emsgssl,1,l,[getNth(emsgssl,0)])
+    else emsgssl
+    fi)
+ if l := len(emsgssl) .
+
+**** for j = 1 len-1 
+ ceq pruneEMsgss$(emsgssl,j,l,emsgsslnew) =
+   pruneEMsgss$$(emsgssl, j,l,emsgsslnew,AM,AMnew) 
+ if AM := getNth(emsgssl,j) --- next level to prune
+ /\ AMnew := none --- survivors
+  .
+  
+****  j is index of AM in emsgssl, 
+***(
+   for emsgs0 in AM does it survive subsumption test for
+     emsgss of index 1 .. j-1
+    if so add to AMnew
+    when done add AMnew to jth level of emsgsslnew
+ )
+ 
+  ceq pruneEMsgss$$(emsgssl,j,l,emsgsslnew,{emsgs0} AM,AMnew) 
+    =  pruneEMsgss$$(emsgssl,j,l,emsgsslnew, AM,AMnew1) 
+  if AMnew1 := 
+    (if checkSubsumed(emsgs0,emsgssl,0,monus(j,1)) 
+     then AMnew 
+     else AMnew {emsgs0} fi) .
+
+  eq pruneEMsgss$$(emsgssl,j,l,emsgsslnew, 
+                   none,AMnew) 
+    = (if (s j < l)
+       then pruneEMsgss$(emsgssl,s j,l,
+                         (emsgsslnew ; [AMnew]))
+       else (emsgsslnew ; [AMnew])
+       fi) .
+ 
+  op checkSubsumed : 
+        EMsgs EMsgssList Nat Nat -> Bool .
+  op checkSubsumed$ : EMsgs EMsgsSet -> Bool .
+  eq checkSubsumed(emsgs0,emsgssl,i,j) =
+      (if (i <= j)
+       then (if checkSubsumed$(emsgs0,getNth(emsgssl,i))    
+             then true
+             else checkSubsumed(emsgs0,emsgssl,s i,j) 
+             fi)
+       else false
+       fi) .
+
+**** does emsgs0 contain some element of 2nd arg
+  eq checkSubsumed$(emsgs0,{emsgs1} emsgss) =
+       (if subset(emsgs1,emsgs0)
+        then true
+        else checkSubsumed$(emsgs0,emsgss)
+        fi) .
+       
+  eq checkSubsumed$(emsgs0,none) = false .
+
+*******************************
+
+  sorts EMsgNat EMsgNatL .
+  subsort EMsgNat < EMsgNatL .
+  op nil : -> EMsgNatL [ctor] .
+  op _;_ : EMsgNatL EMsgNatL -> EMsgNatL 
+           [ctor assoc id: nil] .
+  op [_`,_] : EMsg Nat -> EMsgNat [ctor] .
+
+  **** the number of emsg sets with emsg as an element
+  op countOccsMSL : EMsgssList EMsg Nat -> Nat .
+  op countOccsMS : EMsgsSet EMsg Nat -> Nat .
+
+  eq countOccsMS(none,emsg,n) = n .
+  eq countOccsMS({emsgs} emsgss, emsg, n) 
+    = countOccsMS(emsgss, emsg, 
+      (if mem(emsgs, emsg) then s n else n fi)) .
+
+  eq countOccsMSL(nil,emsg,n) = n .
+  eq countOccsMSL([emsgss] ; emsgssl,emsg,n) 
+     = countOccsMSL(emsgssl,emsg,
+                    countOccsMS(emsgss,emsg,n)) .
+
+*** [emsg,n] st emsg occurs in n emsgsets in emsgssl 
+*** the first element give max count
+  op emssl2emns : EMsgssList  -> EMsgNatL .
+  op emssl2emns$ : EMsgssList EMsgs EMsgNatL
+                     -> EMsgNatL .
+  eq emssl2emns(emsgssl)
+   = emssl2emns$(emsgssl,
+                 flattenEMsgssList(emsgssl,none),
+                 nil) .
+
+**** first of emnl is max occurring emsg
+  eq emssl2emns$(emsgssl,none,emnl) = emnl .
+  ceq emssl2emns$(emsgssl,emsg emsgs,emnl) =
+        emssl2emns$(emsgssl, emsgs,emnl1) 
+   if n := countOccsMSL(emsgssl,emsg,0)
+   /\ emnl1 := addEMN(emnl,[emsg,n]) .
+
+***** put emn at the beginning if max
+  op addEMN : EMsgNatL EMsgNat -> EMsgNatL .
+  eq addEMN(nil,[emsg0,n0]) = [emsg0,n0] .
+  eq addEMN([emsg0,n0] ; emnl,[emsg1,n1]) 
+     = (if n1 >= n0
+        then [emsg1,n1] ; [emsg0,n0] ; emnl
+        else [emsg0,n0] ; emnl ; [emsg1,n1]
+        fi) .
+        
+**** emsgs with max occ count
+  op collectMxEMsg : EMsgNatL -> EMsgs .
+  op collectMxEMsg$ : EMsgNatL Nat EMsgs -> EMsgs .
+
+  eq collectMxEMsg(nil) = none . 
+  eq collectMxEMsg([emsg,n] ; emnl) =
+       collectMxEMsg$(emnl,n,emsg) .
+  eq collectMxEMsg$(nil,n,emsgs) = emsgs .
+  eq collectMxEMsg$([emsg,n] ; emnl,n,emsgs) =
+       collectMxEMsg$(emnl,n,emsgs emsg) .
+  ceq collectMxEMsg$([emsg,n0] ; emnl,n,emsgs) =
+       collectMxEMsg$(emnl,n,emsgs) 
+   if n0 < n .
+
+
+***** generate minimal protection emsg sets
+***** Given maxocc set,and emsgssl produce
+***** [m,removeM(emsgssl)] : m in maxocc
+
+***** given [emsgs,emsgssl] refine with [emsgs m, emsgssl ]
+*****    [m,removeM(emsgsl,m)] : m in maxocc(emsgsl)
+
+  sorts EMsgsEML EMsgsEMLs .
+  subsort EMsgsEML < EMsgsEMLs .
+  
+  op [_,_] : EMsgs EMsgssList -> EMsgsEML .
+  op none : -> EMsgsEMLs [ctor] .
+  op __ : EMsgsEMLs EMsgsEMLs -> EMsgsEMLs 
+         [ctor comm assoc id: none] .
+
+**** return EMsgsSet of minimal protection sets
+  op emsgssl2oneprot : EMsgssList -> EMsgsEMLs .
+****          remaining attack sets candidates  emsgemls todo
+  op emsgssl2oneprot$ : EMsgssList EMsgs EMsgsEMLs 
+                           -> EMsgsEMLs .
+  ceq emsgssl2oneprot(emsgssl) =
+        emsgssl2oneprot$(emsgssl,emsgs,none)
+  if emnl := emssl2emns(emsgssl) --- emsg occ counts
+  /\ emsgs := collectMxEMsg(emnl)  --- emsgs with max count 
+  .
+
+  eq emsgssl2oneprot$(emsgssl,none,ememls) = ememls .
+
+  ceq emsgssl2oneprot$(emsgssl,emsg emsgs,ememls)
+     = emsgssl2oneprot$(emsgssl,emsgs,ememls [emsg,emsgssl1])
+**** attack sets containing emsg are taken care of, remove
+**** remove empty list elements
+   if emsgssl1 := dropHasEmsg(emsgssl,emsg, nil)  .
+
+  op dropHasEmsg : EMsgssList EMsg EMsgssList -> EMsgssList .
+  eq dropHasEmsg(nil,emsg, emsgssl) = emsgssl .
+  ceq dropHasEmsg([emsgss] ; emsgssl0,emsg, emsgssl) = 
+       dropHasEmsg(emsgssl0,emsg, emsgssl1) 
+   if emsgss0 := removeHasEmsg(emsgss,emsg,none) 
+   /\ emsgssl1 := (if emsgss0 == none
+                  then emsgssl
+                  else emsgssl ; [emsgss0]
+                  fi) .
+                  
+  op removeHasEmsg : EMsgsSet EMsg EMsgsSet -> EMsgsSet .
+  eq removeHasEmsg(none,emsg,emsgss0) = emsgss0 .
+  ceq removeHasEmsg({emsgs} emsgss,emsg,emsgss0) 
+    = removeHasEmsg(emsgss,emsg,emsgss1 ) 
+   if emsgss1 :=  (if mem(emsgs,emsg)
+                  then emsgss0
+                  else emsgss0 {emsgs}
+                  fi) .
+  
+**** minimal protection sets for attacks in emsgssl
+**** assume emsgssl is pruned, so a minprotset must
+**** only intersect each attack set non-trivially
+***** genMinProts([none,emsgssl],none)
+  op genMinProts : EMsgsEMLs EMsgsSet -> EMsgsSet .
+  op genMinProtsX : EMsgssList EMsgs EMsgsEMLs EMsgsSet 
+                  -> EMsgsSet .
+*****              cur    cxt   todo     result
+  eq genMinProts(none,emsgss) = emsgss .
+  eq genMinProts([emsgs,emsgssl] emsgsemls,emsgss)
+     = genMinProtsX(emsgssl,emsgs,emsgsemls,emsgss) .
+  
+  ceq  genMinProtsX(emsgssl,emsgs,emsgsemls,emsgss) 
+    =  genMinProts(emsgsemls emsgsemls2,emsgss1)               
+**** selects next message to add to progection set
+   if emsgsemls1 := emsgssl2oneprot(emsgssl) 
+***** { {emsgs emsg} | [emsg,nil] in emsgsemls1}
+   /\ emsgss1 := getMPs(emsgsemls1,emsgs,none)
+**** { [emsgs emsg, emsgssl] st [emsg, emsgssl] in emsgss1 
+****   and emsgssl =/= nil
+   /\ emsgsemls2 := getTodos(emsgsemls1,emsgs,none) .
+
+
+***** { {emsgs emsg} | [emsg,nil] in emsgsemls1}
+ op getMPs : EMsgsEMLs EMsgs EMsgsSet -> EMsgsSet .
+ eq getMPs(none,emsgs,emsgss) = emsgss .
+ ceq getMPs([emsg,emsgssl] emsgsemls,emsgs,emsgss) = 
+      getMPs(emsgsemls,emsgs,emsgss emsgss0) 
+  if emsgss0 := (if emsgssl == nil
+                 then {emsgs emsg}
+                 else (none).EMsgsSet fi) .
+
+**** { [emsgs emsg, emsgssl] st [emsg, emsgssl] in emsgss1 
+****   and emsgssl =/= nil
+ op getTodos :  EMsgsEMLs EMsgs EMsgsEMLs -> EMsgsEMLs .
+ eq getTodos(none,emsgs,emsgsemls) = emsgsemls .
+ ceq getTodos([emsg,emsgssl] emsgsemls1,emsgs,emsgsemls)
+    = getTodos(emsgsemls1,emsgs,emsgsemls emsgsemls0)
+ if emsgsemls0 := 
+    (if emsgssl == nil 
+     then none
+     else [emsgs emsg,emsgssl]
+     fi) .
+
+
+
+endfm
+
+
+**********************************************************
+
+***(
+A candidate minimal protection set for EMsgssList 
+contains at least one msg from each attack emsg set
+
+A Heuristic for computing (nearly) minimal protection
+sets is the following.
+
+Let flat0 be the set pairs (emsg,n) where n > 0
+and emsg occurs in n emsg sets in EMsgssList
+
+Let nx be the max n
+
+for (emsg,nx) in flatMulti
+A[emsg] = emsg, EMsgssList[emsg] --- sets not containing emsg
+ 
+let flat1 be as flat0 for EMsgssList[emsg], nx1 the max occ#
+A[emsg,emsg1] emsg emsg1, EMsgssList[emsg,emsg1] ...
+
+The chains emsg0 emsg1 .. emsgk nil are close to minimal
+   maybe redundancy in the case of some causal patterns
+    
+
+
+)           
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,185 @@
+
+badState  track mvL; vac : off or on-novac
+badState1 track mvL; vac: off  
+badState2  track mvL; 2pnp case vac : off or on-novac same pnp
+
+
+*******************************
+> maude min-attck-pnp.maude
+
+load load-pnp.maude *** loads load pnp-scenario pnp-attacks
+load min-attacks
+
+badState
+ pnpAttacks0  0msg          0
+ pnpAttacks  1msg   145ms   4
+ pnpAttacks1 2msgs  4008ms  37+4
+ pnpAttacks2 3msgs  149070ms 245
+
+
+eq pnpAtt1L = emsgsSet2emsgsList(pnpAttacks) .
+eq pnpAtt1Lp = pruneEMsgss(pnpAtt1L) .
+
+eq pnpAtt2L = emsgsSet2emsgsList(pnpAttacks1) .
+eq pnpAtt2Lp = pruneEMsgss(pnpAtt2L) .
+
+eq pnpAtt2mp = genMinProts([none,pnpAtt2Lp],none) .
+
+
+eq pnpAtt3L = emsgsSet2emsgsList(pnpAttacks2) .
+eq pnpAtt3Lp = pruneEMsgss(pnpAtt3L) .
+
+eq pnpAtt3mp = genMinProts([none,pnpAtt3Lp],none) .
+
+red size(pnpAttacks) . *** 4 
+red len(pnpAtt1L) .    *** 1
+red size(getNth(pnpAtt1L,0)) .  *** 4
+
+red size(getNth(pnpAtt1Lp,0)) . *** 4
+
+red genMinProts([none,pnpAtt1Lp],none) .
+ EMsgsSet: 
+ {{{id("ctl"),inEv("HasVac")},ev("HasVac")} 
+  {{id("ctl"),inEv("atL")},ev("atL")}    
+  {{id("track"),inEv("GoL")},ev("GoL")} 
+  {{id("vac"),inEv("VacOff")},ev("VacOff")}}
+    
+red len(pnpAtt2L) .   *** 2
+red size(getNth(pnpAtt2L,0)) . *** 4
+red size(getNth(pnpAtt2L,1)) . *** 39
+
+red size(getNth(pnpAtt2Lp,0)) . *** 4
+red size(getNth(pnpAtt2Lp,1)) . *** 0
+
+red genMinProts([none,pnpAtt2Lp],none) .
+ EMsgsSet: 
+ {{{id("ctl"),inEv("HasVac")},ev("HasVac")} 
+  {{id("ctl"),inEv( "atL")},ev("atL")}
+  {{id("track"),inEv("GoL")},ev("GoL")} 
+  {{id("vac"),inEv("VacOff")},ev("VacOff")}} 
+
+*******************************
+> maude min-attack-pnp1.maude
+
+load load-pnp1.maude  loads pnp1-scenario.maude  load1 
+load min-attacks.maude
+
+badState
+  pnpAttacks0 51ns  0
+  pnpAttacks1 1167ms 0
+  pnpAttacks2 17154ms 6
+  pnpAttacks3 741258ms 82
+badState1
+  pnp1Attacks0 22ms 0
+  pnp1Attacks1 222ms 0
+  pnp1Attacks2 6449ms  4
+  pnp1Attacks3 440075ms 56
+
+  pnpAtt2L = emsgsSet2emsgsList(pnpAttacks2) .
+  pnpAtt2Lp = pruneEMsgss(pnpAtt2L) .
+
+  pnp1Atts3L = emsgsSet2emsgsList(pnpAttacks3)
+  pnp1Atts3Lp = pruneEMsgss(pnp1Atts3L)
+
+  pnpAtt3mp = genMinProts([none,pnpAtt3Lp],none) .
+
+  red size(pnpAttacks2) .   *** 6
+  red len(pnpAtt2L) .       *** 2
+  red size(getNth(pnpAtt2L,0)) . *** 0
+
+  red size(getNth(pnpAtt2L,1)) .  *** 6
+  red size(getNth(pnpAtt2Lp,1)) .  *** 6
+
+  red genMinProts([none,pnpAtt2Lp],none) .
+  EMsgsSet: 
+  {{{id("track"),inEv("HasVac")},ev("HasVac")}   
+   {{id("track"),inEv("noVac")},ev("noVac")} 
+   {{id("vac"),inEv("atL")},ev("atL")}}
+
+
+red size(pnpAttacks3) .   *** 85
+red len(pnpAtt3L) .       *** 3
+red size(getNth(pnpAtt3L,0)) .   *** 0
+
+red size(getNth(pnpAtt3L,1)) .   *** 6
+
+red size(getNth(pnpAtt3L,2)) .   *** 79
+
+red size(getNth(pnpAtt3Lp,1)) .  *** 6
+red size(getNth(pnpAtt3Lp,2)) .  *** 0
+
+red genMinProts([none,pnpAtt3Lp],none) .
+EMsgsSet: 
+{{{id("track"),inEv("HasVac")},ev("HasVac")} 
+ {{id("track"),inEv("noVac")},ev("noVac")} 
+ {{id("vac"),inEv("atL")},ev("atL")}}
+
+
+*******************************
+> maude min-attack-pnp2.maude
+
+load load-pnp2.maude *** loads load, pnp2-scenario 
+load min-attacks
+
+badstate2
+  pnp2Attacks  1msg  3489ms  8
+  pnp2Attacks1 2msgs 231539ms  139 + 4 = 143
+  pnp2Attacks2 3msgs  8:24 ?
+
+  pnp2Atts2L = emsgsSet2emsgsList(pnp2Attacks1)
+  pnp2Atts2Lp = prune2Msgss(pnp2Atts2L)
+
+  red size(pnp2Attacks) .   *** 8
+  red len(pnp2Att1L) .      *** 1
+  red size(getNth(pnp2Att1L,0)) .   *** 8
+  red size(getNth(pnp2Att1Lp,0)) .   *** 8
+
+  red genMinProts([none,pnp2Att1Lp],none) .
+     
+ {{{id("ctlx1"),inEv("HasVac")},ev("HasVac")} 
+  {{id("ctlx1"), inEv("atL")},ev("atL")}   
+  {{id("ctlx2"),inEv("HasVac")},ev("HasVac")} 
+  {{id("ctlx2"),inEv("atL")},ev("atL")} 
+  {{id("track1"),inEv("GoL")},ev("GoL")} 
+  {{id("track2"),inEv("GoL")},ev("GoL")} 
+  {{id("vac1"),inEv("VacOff")},ev("VacOff")} 
+  {{id("vac2"),inEv("VacOff")},ev("VacOff")}})
+
+
+*******************************
+> maude min-attack-pnp1-2.maude
+
+load-pnp1-2.maude  loads load1, pnp1-2-scenario.maude  
+load min-attacks
+
+badstate2
+  pnp2Attacks   1msg    0
+  pnp2Attacks1  2msgs   8  
+  pnp2Attacks2  3msgs   ??? 8+24  55s
+
+  pnp2Atts1L = emsgsSet2emsgsList(pnp2Attacks)
+  pnp2Atts1Lp = pruneEMsgss(pnp2Atts1L)
+
+  pnp2Atts2L = emsgsSet2emsgsList(pnp2Attacks1)
+  pnp2Atts2Lp = pruneEMsgss(pnp2Atts2L)
+
+  red size(pnp2Attacks) .   *** 0
+
+  red size(pnp2Attacks1) .  *** 12  --- 1807570ms cpu
+  red len(pnp2Att2L) .      *** 2
+  red size(getNth(pnp2Att2L,0)) .  *** 0
+  red size(getNth(pnp2Att2L,1)) . *** 12
+  red size(getNth(pnp2Att2Lp,1)) . *** 12
+
+  red genMinProts([none,pnp2Att2Lp],none) .
+  EMsgsSet: 
+  {{{id("track1"),inEv("HasVac")},ev("HasVac")}   
+  {{id("track1"),inEv("noVac")},ev("noVac")} 
+  {{id("track2"),inEv("HasVac")},ev("HasVac")} 
+  {{id("track2"),inEv("noVac")},ev("noVac")} 
+  {{id("vac1"),inEv("atL")},ev("atL")} 
+  {{id("vac2"),inEv("atL")},ev("atL")}}     
+
+*******************************
+
+       

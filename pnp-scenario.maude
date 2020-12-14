@@ -24,10 +24,11 @@ mod PNP-SCENARIO is
 
   var emsg : EMsg .
   var emsgs : EMsgs .
-  ops emsgStart emsgI emsgI1 : -> EMsg .
+  ops emsgStart emsgI emsgI1 emsgI2 : -> EMsg .
   eq emsgStart = {{id("ctl"),inEv("start")}, ev("start")} .
   eq emsgI = {{sid(10,1),sin(10,2)},sev(10,3)} .
   eq emsgI1 = {{sid(20,1),sin(20,2)},sev(20,3)} .
+  eq emsgI2 = {{sid(30,1),sin(30,2)},sev(30,3)} .
 
   eq appFBs(id("pnp")) = id("vac") id("track") id("ctl") .
 
@@ -74,3 +75,11 @@ eof
 select PNP-SCENARIO .
 red pnpInit(emsgStart) .
 rew [20] pnpInit(emsgStart) .
+
+select PNP-SCENARIO .
+search [1] pnpInit(emsgStart) =>+ app:Application such that badState(app:Application) .
+search [1] in PNP-SCENARIO : pnpInit(emsgStart) =>+ app:Application such that
+    badState(app:Application) = true .
+
+No solution.
+states: 24  rewrites: 7326 in 3ms cpu (3ms real) (2121019 rewrites/second)

@@ -1,0 +1,304 @@
+***(
+
+ctl
+       start        atR          HasVac        
+   init ----> LOff -------> ROff ------->  ROn 
+        goR    ^    VacOn         goL       |   
+                \                           |
+                 \    NoVac         atL     |
+                    <------- LOn  <------- <
+                       goR          VacOff  
+ 
+ctlx -- pauses at each round
+     start        atR          HasVac        
+ready ----> LOff -------> ROff ------->  ROn 
+  ^   goR         VacOn         goL       |   
+   \                                      |
+    \            NoVac         atL        |
+      <------- <------- LOn  <---------- <
+                 ready          VacOff  
+ 
+
+coord
+         start         ready from ctlx_i
+   init -----------> inCycle -------->    init
+   start to ctlx_i           start
+
+NB if all branches don't send read in the same phase
+the application will halt in a dead state.
+
+
+         [ctlx1]               [ctlx2]
+      |ready  ^              ^          v ready
+      v       | start        | start     \
+       \       \            /             \
+       ready1   \start1    /start2 ready2  |
+        ---         [ coord ]     <- ------
+        
+intruder can cause a slow pnp to loose its start by sending
+causing coord to send prematurely
+maybe cause pnp delay to put in late state                      
+)
+
+**** version with track/vac double checking
+mod PNP2-SCENARIO is
+  inc FB-LIB-DUAL .
+  inc APP-EXE .
+  
+  eq appLinks(id("pnp2")) = 
+  **** pnp1
+   {{id("vac1"),outEv("NoVac")}, {id("ctlx1"),inEv("NoVac")}}
+   {{id("vac1"),outEv("NoVac")}, {id("track1"),inEv("NoVac")}}  **** new
+   {{id("vac1"),outEv("HasVac")},{id("ctlx1"),inEv("HasVac")}}
+   {{id("vac1"),outEv("HasVac")},{id("track1"),inEv("HasVac")}} **** new
+
+   {{id("ctlx1"),outEv("VacOn")}, {id("vac1"), inEv("VacOn")}}
+   {{id("ctlx1"),outEv("VacOff")},{id("vac1"), inEv("VacOff")}} 
+   {{id("track1"),outEv("atR")}, {id("ctlx1"),inEv("atR")}}
+   {{id("track1"),outEv("atL")},{id("ctlx1"),inEv("atL")}}
+   {{id("track1"),outEv("atL")},{id("vac1"),inEv("atL")}}  **** new
+   {{id("ctlx1"),outEv("GoR")}, {id("track1"), inEv("GoR")}}
+   {{id("ctlx1"),outEv("GoL")}, {id("track1"), inEv("GoL")}}
+   {{id("track1"),outEv("GoR1")},{id("track1"), inEv("GoR1")}} 
+   {{id("track1"),outEv("GoL1")},{id("track1"), inEv("GoL1")}} 
+
+  **** pnp2
+   {{id("vac2"),outEv("NoVac")}, {id("ctlx2"),inEv("NoVac")}}
+   {{id("vac2"),outEv("NoVac")}, {id("track2"),inEv("NoVac")}}  **** new
+   {{id("vac2"),outEv("HasVac")},{id("ctlx2"),inEv("HasVac")}}
+   {{id("vac2"),outEv("HasVac")},{id("track2"),inEv("HasVac")}} **** new
+
+   {{id("ctlx2"),outEv("VacOn")}, {id("vac2"), inEv("VacOn")}}
+   {{id("ctlx2"),outEv("VacOff")},{id("vac2"), inEv("VacOff")}} 
+   {{id("track2"),outEv("atR")}, {id("ctlx2"),inEv("atR")}}
+   {{id("track2"),outEv("atL")}, {id("ctlx2"),inEv("atL")}}
+   {{id("track2"),outEv("atL")},{id("vac2"),inEv("atL")}}    **** new
+   {{id("ctlx2"),outEv("GoR")}, {id("track2"), inEv("GoR")}}
+   {{id("ctlx2"),outEv("GoL")}, {id("track2"), inEv("GoL")}}
+   {{id("track2"),outEv("GoR1")},{id("track2"), inEv("GoR1")}} 
+   {{id("track2"),outEv("GoL1")},{id("track2"), inEv("GoL1")}} 
+
+ **** coordinator
+   {{id("coord"),outEv("start1")}, {id("ctlx1"),inEv("start")}}
+   {{id("ctlx1"),outEv("ready")}, {id("coord"), inEv("ready1")}}
+ 
+   {{id("coord"),outEv("start2")}, {id("ctlx2"),inEv("start")}}
+   {{id("ctlx2"),outEv("ready")}, {id("coord"), inEv("ready2")}}
+ 
+   {{id("pnp2"), {id("coord"),inEv("start")}},
+                 {id("coord"),inEv("start")}}
+   .
+
+  ops pnp2Start emsgI emsgI1 emsgI2 : -> EMsg .
+  eq pnp2Start = {{id("coord"),inEv("start")}, ev("start")} .
+  eq emsgI = {{sid(10,1),sin(10,2)},sev(10,3)} .
+  eq emsgI1 = {{sid(20,1),sin(20,2)},sev(20,3)} .
+  eq emsgI2 = {{sid(30,1),sin(30,2)},sev(30,3)} .
+
+  eq appFBs(id("pnp2")) = 
+     id("vac1") id("track1") id("ctlx1") 
+     id("vac2") id("track2") id("ctlx2")
+     id("coord") .
+ 
+ op pnp2FBs : -> FBs .
+ eq pnp2FBs =
+     pnp-coordInit(id("coord"))  
+     vacInit(id("vac1")) 
+     trackInit(id("track1")) 
+     ctlxInit(id("ctlx1"))
+     vacInit(id("vac2")) 
+     trackInit(id("track2")) 
+     ctlxInit(id("ctlx2")) .
+
+ var emsg : EMsg .
+ var emsgs : EMsgs .    
+ vars vacFB trackFB ctlxFBa ctlxFBb : FB .
+ var fbs : FBs .
+ vars str str0 str1 : String . 
+ var n : Nat .
+
+ **** from fb-lib fbs have ticked = false, ready for trans
+   op pnp2Init : EMsg -> Application .
+   eq pnp2Init(emsg) = mkApp(id("pnp2"),pnp2FBs,emsg) .
+ 
+   op pnp2InitI : Application EMsgs -> AppIntruder .
+   eq pnp2InitI(app:Application,emsgs) = [app:Application,emsgs] .
+
+    op lastChar : String -> String .
+    ceq lastChar(str) = substr(str,n, s n) 
+      if s n := length(str) .
+    
+    eq lastChar(str) = "" [owise] .
+     
+    op samePnP : Id Id -> Bool .
+    eq samePnP(id(str0),id(str1)) 
+          = lastChar(str0) == lastChar(str1) .
+
+    op badState2 : FBs -> Bool .
+   ceq badState2(vacFB trackFB fbs) 
+    = true
+    if cidOf(vacFB) == vac 
+    /\ cidOf(trackFB) == track
+    /\ samePnP(idOf(vacFB),idOf(trackFB))
+    /\ (getState(vacFB) == st("off")
+        or getState(vacFB) == st("on-novac"))
+    /\ getState(trackFB) == st("mvL") .
+   eq badState2(fbs) = false [owise] .
+
+   op badState2 : Application -> Bool .
+   eq badState2(app:Application)
+    = badState2(getFBs(app:Application)) .
+
+   op badState2 : AppIntruder -> Bool .
+   eq badState2([app:Application,emsgs])
+    = badState2(getFBs(app:Application)) .
+
+    op badState2-1 : FBs -> Bool .
+   ceq badState2-1(vacFB trackFB fbs) 
+    = true
+    if cidOf(vacFB) == vac 
+    /\ cidOf(trackFB) == track
+    /\ samePnP(idOf(vacFB),idOf(trackFB))
+    /\ getState(vacFB) == st("off")
+    /\ getState(trackFB) == st("mvL") .
+   eq badState2-1(fbs) = false [owise] .
+
+   op badState2-1 : Application -> Bool .
+   eq badState2-1(app:Application)
+    = badState2-1(getFBs(app:Application)) .
+
+   op badState2-1 : AppIntruder -> Bool .
+   eq badState2-1([app:Application,emsgs])
+    = badState2-1(getFBs(app:Application)) .
+
+
+endm   
+
+mod PNP2-ATTACKS is
+  inc PNP2-SCENARIO .
+  inc TRACE2ATTACKS .
+  
+  
+  op pnp2Attacks : -> EMsgsSet .
+  eq pnp2Attacks = getBadEMsgsX('PNP2-SCENARIO,'badState2,
+  pnp2InitI(pnp2Init(pnp2Start),emsgI)) .
+
+  op pnp2Attacks1 : -> EMsgsSet .
+  eq pnp2Attacks1 = getBadEMsgsX('PNP2-SCENARIO,'badState2,
+  pnp2InitI(pnp2Init(pnp2Start),emsgI emsgI1)) .
+
+  op pnp2Attacks2 : -> EMsgsSet .
+  eq pnp2Attacks2 = getBadEMsgsX('PNP2-SCENARIO,'badState2,
+  pnp2InitI(pnp2Init(pnp2Start),emsgI emsgI1 emsgI2)) .
+
+  op pnpLOnROff2Attacks : -> EMsgsSet .
+  eq pnpLOnROff2Attacks = getBadEMsgsX('PNP2-SCENARIO,'badStateLOnROff,
+  pnp2InitI(pnp2Init(pnp2Start),emsgI)) .
+
+endm
+
+eof
+
+red pnp2Init(pnp2Start) .
+set print attribute on .
+rew[1] pnp2Init(pnp2Start) .
+rew[30] pnp2Init(pnp2Start) .
+
+set print attribute off .
+
+select PNP2-SCENARIO .
+search [1] pnp2Init(pnp2Start) =>+ app:Application such that badState2(app:Application) .
+No solution.
+states: 114  rewrites: 278790 in 85ms cpu (85ms real) 
+
+***** badstate2
+search [1] pnp2InitI(pnp2Init(pnp2Start),(none).EMsgs) =>+ appI:AppIntruder such that badState2(appI:AppIntruder) .
+No solution.
+states: 114  rewrites: 278791 in 88ms cpu (89ms real) 
+
+search [1] pnp2InitI(pnp2Init(pnp2Start),emsgI) =>+ appI:AppIntruder such that badState2(appI:AppIntruder) .
+No solution.
+states: 6814  rewrites: 17475989 in 5277ms cpu (5284ms real) 
+        
+search [1] pnp2InitI(pnp2Init(pnp2Start),emsgI emsgI1) =>+ appI:AppIntruder such that badState2(appI:AppIntruder) .
+Solution 1 (state 22179)
+states: 22180  rewrites: 60471328 in 18208ms cpu (18217ms real)
+wait12 ROff1 mvL1 off2  ROff2 R2 off2
+oEvEffs : (outEv("GoL1") :~ ev("GoL1")) --- track1
+iEMsgs : ({{id("vac1"),inEv("VacOn")},ev("VacOn")} 
+          {{id("vac2"),inEv("VacOn")},ev("VacOn")}) 
+ssbs : ((sev(10, 3) :~ ev("GoL")) 
+        (sev(20, 3) :~ ev("HasVac")) 
+        (sid(10, 1) :~ id("track1"))
+        (sid(20, 1) :~ id("track1")) 
+        (sin(10, 2) :~ inEv("GoL")) 
+        (sin(20, 2) :~ inEv("HasVac")))
+    
+search [1] pnp2InitI(pnp2Init(pnp2Start),emsgI emsgI1 emsgI2) =>+ appI:AppIntruder such that badState2(appI:AppIntruder) .
+Solution 1 (state 153824)
+states: 153825  rewrites: 591695641 in 225898ms cpu (226215ms real) 
+wait12  ROff1 mvL1 off1 LOff2  mvR2  off2
+oEvEffs : (outEv("GoL1") :~ ev("GoL1")) --- track1
+iEMsgs : ({{id("track2"),inEv("GoR1")},ev("GoR1")} 
+          {{id("vac1"),inEv("VacOn")},ev("VacOn")}) 
+ssbs : ((sev(10, 3) :~ ev("GoR")) 
+        (sev(20, 3) :~ ev("GoL")) 
+        (sev(30, 3) :~ ev("HasVac")) 
+        (sid(10, 1) :~ id("track1")) 
+        (sid(20, 1) :~ id("track1")) 
+        (sid(30, 1) :~ id("track1")) 
+        (sin(10, 2) :~ inEv("GoR")) 
+        (sin(20, 2) :~ inEv("GoL")) 
+        (sin(30, 2) :~ inEv("HasVac")) )
+
+
+***** badstate2-1
+search [1] pnp2InitI(pnp2Init(pnp2Start),(none).EMsgs) =>+ appI:AppIntruder such that badState2-1(appI:AppIntruder) .
+No solution.
+states: 114  rewrites: 277569 in 99ms cpu (99ms real)
+
+search [1] pnp2InitI(pnp2Init(pnp2Start),emsgI) =>+ appI:AppIntruder such that badState2-1(appI:AppIntruder) .
+No solution.
+states: 6814  rewrites: 17402399 in 6288ms cpu (6299ms real) 
+        
+search [1] pnp2InitI(pnp2Init(pnp2Start),emsgI emsgI1) =>+ appI:AppIntruder such that badState2-1(appI:AppIntruder) .
+Solution 1 (state 22179)
+states: 22180  rewrites: 60229575 in 22597ms cpu 
+wait12 ROff1 mvL1 off1 ROff2 R2 off2
+oEvEffs : (outEv("GoL1") :~ ev("GoL1")) 
+iEMsgs : ({{id("vac1"),inEv("VacOn")},ev("VacOn")} 
+          {{id("vac2"),inEv("VacOn")},ev("VacOn")}) 
+ssbs : ((sev(10, 3) :~ ev("GoL")) 
+        (sev(20, 3) :~ ev("HasVac")) 
+        (sid(10, 1) :~ id("track1")) 
+        (sid(20, 1) :~ id("track1")) 
+        (sin(10, 2) :~ inEv("GoL")) 
+        (sin(20, 2) :~ inEv("HasVac")))
+    
+    
+search [1] pnp2InitI(pnp2Init(pnp2Start),emsgI emsgI1 emsgI2) =>+ appI:AppIntruder such that badState2-1(appI:AppIntruder) .
+Solution 1 (state 153824)
+states: 153825  rewrites: 590020350 in 266865ms cpu 
+wait12 ROff1 mvL1 off1  LOff2 mvR2  off2
+oEvEffs : (outEv("GoL1") :~ ev("GoL1")) --- track1
+iEMsgs : ({{id("track2"),inEv("GoR1")},ev("GoR1")} 
+          {{id("vac1"),inEv("VacOn")},ev("VacOn")}) 
+ssbs : ((sev(10, 3) :~ ev("GoR")) 
+        (sev(20, 3) :~ ev("GoL")) 
+        (sev(30, 3) :~ ev("HasVac")) 
+        (sid(10, 1) :~ id("track1")) 
+        (sid(20, 1) :~ id("track1"))
+        (sid(30, 1) :~ id("track1")) 
+        (sin(10, 2) :~ inEv("GoR")) 
+        (sin(20, 2) :~ inEv("GoL")) 
+        (sin(30, 2) :~ inEv("HasVac")) )
+
+
+
+red getBadEMsgsX('PNP2-SCENARIO,'badState2, pnp2InitI(pnp2Init(pnp2Start),(none).EMsgs)) . --- 7 fbs bound 0
+
+red pnp2Attacks . --- 7 fbs bound 1
+
+red pnp2Attacks1 .   --- 7 fbs bound 2
+
+red pnp2Attacks2 .   --- 7 fbs bound 3  8:24  cpu 55s

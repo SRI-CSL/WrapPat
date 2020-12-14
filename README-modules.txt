@@ -1,6 +1,7 @@
 Module summary
 
-****** load.maude
+****** load.maude ***************************
+***************************
 basics.maude
 
   fmod ID 
@@ -9,6 +10,7 @@ basics.maude
   fmod MYATTRS 
     sorts MyAttr < MyAttrs .
 
+***************************
 fb.maude  requires basics
 
   fmod EVENTS is inc STRING .
@@ -67,12 +69,36 @@ fb.maude  requires basics
     op stsFB : FbC -> States .
     op trsFB : FbC State -> Trs .
 
+***************************
 emessages.maude
   fmod EMESSAGES is inc PORT . inc EVENTS .
     sort EMsg < EMsgs .
     op {_,_} : Port Event -> EMsg . 
     op size : EMsgs -> Nat .
+    op mem : EMsgs EMsg -> Bool .
+    op intersect : EMsgs EMsgs -> EMsgs .
+    op subset : EMsgs EMsgs -> Bool .
+ 
+    sort EMsgsSet .
+    op none : -> EMsgsSet .
+    op {_} : EMsgs -> EMsgsSet [ctor] .
+    op __ : EMsgsSet EMsgsSet -> EMsgsSet [ctor comm assoc id: none] .
+    op size : EMsgsSet -> Nat .
+    op addEMsgs : EMsgs EMsgs -> EMsgs .
+    op flattenEMsgsSet : EMsgsSet EMsgs -> EMsgs .
 
+  **** lists of emsgs sets, the intent is each list element
+  **** has sets of the same size
+    sort EMsgssList .
+    op nil : -> EMsgssList .
+    op [_] : EMsgsSet -> EMsgssList [ctor] .
+    op _;_ : EMsgssList EMsgssList -> EMsgssList [ctor assoc id: nil] .
+    op len : EMsgssList -> Nat .
+    op getNth : EMsgssList Nat -> EMsgsSet .
+    op flattenEMsgssList : EMsgssList EMsgs -> EMsgs .
+
+
+***************************
 sym-emessages.maude
   fmod SYM-EMESSAGES is inc EMESSAGES .
     subsort Sym-Event < Event .
@@ -97,6 +123,7 @@ sym-emessages.maude
     op _[_] : EMsg SSBs -> EMsg .
     op _[[_]] : EMsgs SSBs -> EMsgs .
 
+***************************
 sym-transition.maude
   fmod CONSTRAINTS is inc SYM-EMESSAGES . inc COND .
     sort Constraint < CSet .
@@ -116,6 +143,7 @@ sym-transition.maude
     op `{_`} : SSBs -> SSBsSet [ctor] .
     op genSol1 : Id EMsgs CSet -> SSBsSet .
     
+***************************
 app.maude
   fmod APPLICATION is inc FB . inc SYM-EMESSAGES .
     **** GLOBALS set in scenario
@@ -156,6 +184,7 @@ app.maude
     crl[app-exe2]
     rl[app-intruder]
 
+***************************
 fb-lib.maude
 
   fmod VACUMM-FB is inc FB .
@@ -188,18 +217,48 @@ fb-lib.maude
 
 fmod FB-LIB-DUAL is inc VACUMM-FB . inc TRACK-FB  .
                     inc CONTROLX-FB . inc PNP-COORD-FB .
-  
 
-pnp-scenario.maude
-  mod PNP-SCENARIO is inc FB-LIB . inc APP-EXE .
-    appLinks(id("pnp")) = 
-    ops emsgStart emsgI emsgI1 : -> EMsg .
-    op pnpInit : EMsg -> Application .
-    op pnpInitI : Application EMsgs -> AppIntruder .
-    op badState : FBs -> Bool .
-    op badState : Application -> Bool .
-    op badState : AppIntruder -> Bool .
+***************************
+fb-lib1.maude
 
+fmod VACUMM-FB is   inc FB .
+*** requires ctl and track input
+  op vac : -> FbC .
+  op vacInit : Id -> FB .
+
+fmod TRACK-FB is inc FB .
+**** orig trac
+  op track : -> FbC .
+  op trackInit : Id -> FB .
+
+fmod TRACK-FB1 is inc FB .
+*** requires ctl and vac input
+  op track : -> FbC .
+  op trackInit : Id -> FB .
+
+fmod CONTROL-FB is inc FB .
+  op ctl : -> FbC .
+  op ctlInit : Id -> FB .
+
+fmod FB-LIB is 
+  inc VACUMM-FB .  inc TRACK-FB .  inc CONTROL-FB .
+fmod FB-LIB1 is
+  inc VACUMM-FB . inc TRACK-FB1 .  inc CONTROL-FB .
+
+fmod CONTROLX-FB is inc FB .
+**** ctlx -- pauses at each round
+  op ctlx : -> FbC .
+  op ctlxInit : Id -> FB .
+
+fmod PNP-COORD-FB is  inc FB .
+  op pnp-coord : -> FbC .
+  op pnp-coordInit : Id -> FB .
+ 
+fmod FB-LIB-DUAL is
+  inc VACUMM-FB .  inc TRACK-FB1  .
+  inc CONTROLX-FB .  inc PNP-COORD-FB .
+
+***************************
 trace2attacks.maude
 
   mod TRACE2ATTACKS is inc META-LEVEL . inc APP-EXE .
@@ -213,14 +272,158 @@ trace2attacks.maude
       op getEmsgIs : AppIntList EMsgs -> EMsgs .
       op getDelivered : EMsgs SSBs EMsgs -> EMsgs  .
 
-pnp-attacks.maude
+****** load-pnp ***************************
+***************************
+pnp-scenario.maude   pnp-attacks.maude
+  mod PNP-SCENARIO is inc FB-LIB . inc APP-EXE .
+    appLinks(id("pnp")) = 
+    ops emsgStart emsgI emsgI1 : -> EMsg .
+    op pnpInit : EMsg -> Application .
+    op pnpInitI : Application EMsgs -> AppIntruder .
+    op badState : FBs -> Bool .
+    op badState : Application -> Bool .
+    op badState : AppIntruder -> Bool .
 
-  mod PNP-ATTACKS is inc PNP-SCENARIO . inc TRACE2ATTACKS .
-    op pnpAttacks : -> EMsgsSet .
-    op pnpAttacks1 : -> EMsgsSet .
+mod PNP-ATTACKS is inc PNP-SCENARIO . inc TRACE2ATTACKS .
+  op pnpAttacks0 : -> EMsgsSet .  --- 0 imsg
+  op pnpAttacks : -> EMsgsSet .   --- 1 imsg
+  op pnpAttacks1 : -> EMsgsSet .  --- 2 imsgs
+  op pnpAttacks2 : -> EMsgsSet .  --- 3 imsgs
 
+****** load-pnp1 ***************************
+pnp1-scenario.maude
+  mod PNP-SCENARIO is inc FB-LIB1 . inc APP-EXE .
+  op pnpInit : EMsg -> Application .
+  op pnpInitI : Application EMsgs -> AppIntruder .
 
-****** load-deploy
+  op badState : FBs -> Bool .
+  op badState : Application -> Bool .
+  op badState : AppIntruder -> Bool .
+  op badState1 : FBs -> Bool .
+  op badState1 : Application -> Bool .
+  op badState1 : AppIntruder -> Bool .
+
+mod PNP-ATTACKS is inc PNP-SCENARIO . inc TRACE2ATTACKS .
+using badstate
+  op pnpAttacks0 : -> EMsgsSet [memo] . --- no imsgs
+  op pnpAttacks1 : -> EMsgsSet [memo] . --- 1 imsg
+  op pnpAttacks2 : -> EMsgsSet [memo] . --- 2 imsgs
+  op pnpAttacks3 : -> EMsgsSet [memo] . --- 3 imsgs
+using badstate1
+  op pnp1Attacks0 : -> EMsgsSet [memo] .  --- 0 imsgs
+  op pnp1Attacks1 : -> EMsgsSet [memo] .  --- 1 imsg
+  op pnp1Attacks2 : -> EMsgsSet [memo] .  --- 2 imsgs
+  op pnp1Attacks3 : -> EMsgsSet [memo] .  --- 3 imsgs
+
+****** load-pnp2 ***************************
+pnp2-scenario.maude
+  mod PNP2-SCENARIO is inc FB-LIB-DUAL . inc APP-EXE .
+    ops pnp2Start emsgI emsgI1 : -> EMsg .
+    op pnp2FBs : -> FBs .
+    op pnp2Init : EMsg -> Application .
+    op pnp2InitI : Application EMsgs -> AppIntruder .
+    op badState2 : FBs -> Bool .
+    op badState2 : Application -> Bool .
+    op badState2 : AppIntruder -> Bool .
+    op badStateLOnROff : FBs -> Bool .
+    op badStateLOnROff : Application -> Bool .
+    op badStateLOnROff : AppIntruder -> Bool .
+
+ mod PNP2-ATTACKS is inc PNP2-SCENARIO . inc TRACE2ATTACKS .
+    op pnp2Attacks : -> EMsgsSet .
+    op pnpLOnROff2Attacks : -> EMsgsSet .
+    
+****** load-pnp1-2 ***************************
+pnp1-2-scenario.maude
+
+**** version with track/vac double checking
+mod PNP2-SCENARIO is
+  inc FB-LIB-DUAL .
+  inc APP-EXE .
+  ops pnp2Start emsgI emsgI1 emsgI2 : -> EMsg .
+  op pnp2FBs : -> FBs .
+  op pnp2Init : EMsg -> Application .
+  op pnp2InitI : Application EMsgs -> AppIntruder .
+  op badState2 : FBs -> Bool .
+  op badState2 : Application -> Bool .
+  op badState2 : AppIntruder -> Bool .
+  op badState2-1 : FBs -> Bool .
+  op badState2-1 : Application -> Bool .
+  op badState2-1 : AppIntruder -> Bool .
+ 
+ mod PNP2-ATTACKS is inc PNP2-SCENARIO . inc TRACE2ATTACKS .
+   op pnp2Attacks : -> EMsgsSet . --- 1 imsg
+   op pnp2Attacks1 : -> EMsgsSet .  --- 2 imsgs
+   op pnp2Attacks2 : -> EMsgsSet .  --- 3 imsgs 
+
+***************************
+min-attacks.maude
+  fmod MIN-ATTACKS is   inc TRACE2ATTACKS .
+***** the main goal is to generate minimal protection emsg sets
+***** these are minimal sets of emsgs whose protection will prevent attack
+
+**** eml[j] -- the emsg sets of size j+1 from input
+  op emsgsSet2emsgsList : EMsgsSet  ->  EMsgssList .
+
+**** return emsgssl st attack sets of size j do not contain any attack set of size  less than j (uses check subsumed)
+  op pruneEMsgss : EMsgssList -> EMsgssList .
+   
+  op checkSubsumed : EMsgs EMsgssList Nat Nat -> Bool .
+
+***** List of pairs [emsg,n]  used to count the occurrences of emsg
+***** in a set of attack sets
+  sorts EMsgNat EMsgNatL .
+  subsort EMsgNat < EMsgNatL .
+  op nil : -> EMsgNatL [ctor] .
+  op _;_ : EMsgNatL EMsgNatL -> EMsgNatL [ctor assoc id: nil] .
+  op [_`,_] : EMsg Nat -> EMsgNat [ctor] .
+
+*** ... [emsg,n] ; ... st emsg occurs in n emsgsets in emsgssl 
+*** the first element give max count
+  op emssl2emns : EMsgssList  -> EMsgNatL .
+  op emssl2emns$ : EMsgssList EMsgs EMsgNatL -> EMsgNatL .
+      **** the number of emsg sets with emsg as an element
+      op countOccsMSL : EMsgssList EMsg Nat -> Nat .
+      op countOccsMS : EMsgsSet EMsg Nat -> Nat .
+
+**** emsgs with max occ count
+  op collectMxEMsg : EMsgNatL -> EMsgs .
+  op collectMxEMsg$ : EMsgNatL Nat EMsgs -> EMsgs .
+
+***** generate minimal protection emsg sets
+**** minimal protection sets for attacks in emsgssl
+**** assume emsgssl is pruned, so a minprotset must
+**** only intersect each attack set non-trivially
+***** genMinProts([none,emsgssl],none)
+
+  sorts EMsgsEML EMsgsEMLs .
+  subsort EMsgsEML < EMsgsEMLs .
+  op [_,_] : EMsgs EMsgssList -> EMsgsEML .
+  op none : -> EMsgsEMLs [ctor] .
+  op __ : EMsgsEMLs EMsgsEMLs -> EMsgsEMLs 
+         [ctor comm assoc id: none] .
+
+  op genMinProts : EMsgsEMLs EMsgsSet -> EMsgsSet .
+  op genMinProtsX : EMsgssList EMsgs EMsgsEMLs EMsgsSet 
+                  -> EMsgsSet .
+*****              cur    cxt   todo     result
+
+***** Given maxocc set,and emsgssl produce
+***** [m,removeM(emsgssl)] : m in maxocc
+***** given [emsgs,emsgssl] refine with [emsgs m, emsgssl ]
+*****    [m,removeM(emsgsl,m)] : m in maxocc(emsgsl)
+   op emsgssl2oneprot : EMsgssList -> EMsgsEMLs .
+      op dropHasEmsg : EMsgssList EMsg EMsgssList -> EMsgssList .
+      op removeHasEmsg : EMsgsSet EMsg EMsgsSet -> EMsgsSet .
+
+  ***** { {emsgs emsg} | [emsg,nil] in emsgsemls1}
+   op getMPs : EMsgsEMLs EMsgs EMsgsSet -> EMsgsSet .
+  **** { [emsgs emsg, emsgssl] st [emsg, emsgssl] in emsgss1 
+  ****   and emsgssl =/= nil
+   op getTodos :  EMsgsEMLs EMsgs EMsgsEMLs -> EMsgsEMLs .
+
+******************************************************
+****** load-deploy  ***************************
 messages.maude
 
   fmod MESSAGES is inc PORT . inc EVENTS .
@@ -235,6 +438,7 @@ messages.maude
     op unsign : Event -> Event .
     op isSigned : Event Id -> Bool .
     
+***************************
 policy.maude
 
   fmod POLICY is inc PORT .
@@ -243,6 +447,7 @@ policy.maude
     op [o`:_;_] : Id OutEv -> oFact .  ---  {fbId,out}
     op [i`:_;_,_] : Id InEv Id -> iFact .  --- {fbId,in}, devId
 
+***************************
 sys.maude
 
   fmod SYSTEM is inc APPLICATION . inc MESSAGES . inc MAP{Id,Id} .
@@ -281,11 +486,12 @@ sys.maude
     crl[sys-collect]
     rl[sys-intruder]
     
+***************************
 pnp-scenario-deployed.maude
 
   fmod DEPLOY-APP is inc APPLICATION . inc SYSTEM .
     op deployFBs : FBs Apps Map{Id,Id} -> Apps .
-    op emsg2imsg : Id EMsg Map{Id,Id}  -> Msgs .   --- 0 or 1
+    op emsg2imsg : Id EMsg Map{Id,Id}  -> Msgs .  --- 0 or 1
 
   mod PNP-SCENARIO-DEPLOYED is inc SYS-EXE . inc PNP-SCENARIO .
                                inc DEPLOY-APP .
@@ -297,8 +503,7 @@ pnp-scenario-deployed.maude
     op badState : SysIntruder -> Bool .
     ops dPnP1-1 dPnP-vc-t : -> System .
 
-****** load-wrap
-
+****** load-wrap  **************************
 wrap.maude
 
   fmod WRAP-SYSTEM is inc APPLICATION . inc SYSTEM . inc POLICY .
@@ -310,32 +515,11 @@ wrap.maude
     op wrap-dev : Application EMsgs Links Map{Id,Id} 
                  iPolicy oPolicy -> Application . 
 
+***************************
 pnp-scenario-wrap.maude
 
   mod PNP-SCENARIO-WRAP is inc PNP-SCENARIO-DEPLOYED . 
                  inc TRACE2ATTACKS . inc WRAP-SYSTEM .
     op pnpBad : -> EMsgsSet .
     ops wPnP1-1 wPnP-vc-t : -> System .
-
-
-****** load-pnp2 
-
-pnp2-scenario.maude
-  mod PNP2-SCENARIO is inc FB-LIB-DUAL . inc APP-EXE .
-    ops pnp2Start emsgI emsgI1 : -> EMsg .
-    op pnp2FBs : -> FBs .
-    op pnp2Init : EMsg -> Application .
-    op pnp2InitI : Application EMsgs -> AppIntruder .
-    op badState2 : FBs -> Bool .
-    op badState2 : Application -> Bool .
-    op badState2 : AppIntruder -> Bool .
-    op badStateLOnROff : FBs -> Bool .
-    op badStateLOnROff : Application -> Bool .
-    op badStateLOnROff : AppIntruder -> Bool .
-
-  mod PNP2-ATTACKS is inc PNP2-SCENARIO . inc TRACE2ATTACKS .
-    op pnp2Attacks : -> EMsgsSet .
-    op pnpLOnROff2Attacks : -> EMsgsSet .
-    
-
 

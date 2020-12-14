@@ -80,10 +80,11 @@ mod PNP2-SCENARIO is
                  {id("coord"),inEv("start")}}
    .
 
-  ops pnp2Start emsgI emsgI1 : -> EMsg .
+  ops pnp2Start emsgI emsgI1 emsgI2 : -> EMsg .
   eq pnp2Start = {{id("coord"),inEv("start")}, ev("start")} .
   eq emsgI = {{sid(10,1),sin(10,2)},sev(10,3)} .
   eq emsgI1 = {{sid(20,1),sin(20,2)},sev(20,3)} .
+  eq emsgI2 = {{sid(30,1),sin(30,2)},sev(30,3)} .
 
   eq appFBs(id("pnp2")) = 
      id("vac1") id("track1") id("ctlx1") 
@@ -146,7 +147,7 @@ mod PNP2-SCENARIO is
 
 **** ROff LOn
     op badStateLOnROff : FBs -> Bool .
-   ceq badState2(ctlxFBa ctlxFBb fbs) 
+   ceq badStateLOnROff(ctlxFBa ctlxFBb fbs) 
     = true
     if cidOf(ctlxFBa) == ctlx 
     /\ cidOf(ctlxFBb) == ctlx
@@ -174,8 +175,16 @@ mod PNP2-ATTACKS is
   eq pnp2Attacks = getBadEMsgsX('PNP2-SCENARIO,'badState2,
   pnp2InitI(pnp2Init(pnp2Start),emsgI)) .
 
+  op pnp2Attacks1 : -> EMsgsSet .
+  eq pnp2Attacks1 = getBadEMsgsX('PNP2-SCENARIO,'badState2,
+  pnp2InitI(pnp2Init(pnp2Start),emsgI emsgI1)) .
+
+  op pnp2Attacks2 : -> EMsgsSet .
+  eq pnp2Attacks2 = getBadEMsgsX('PNP2-SCENARIO,'badState2,
+  pnp2InitI(pnp2Init(pnp2Start),emsgI emsgI1 emsgI2)) .
+
   op pnpLOnROff2Attacks : -> EMsgsSet .
-  eq pnp2Attacks = getBadEMsgsX('PNP2-SCENARIO,'badState2,
+  eq pnpLOnROff2Attacks = getBadEMsgsX('PNP2-SCENARIO,'badStateLOnROff,
   pnp2InitI(pnp2Init(pnp2Start),emsgI)) .
 
 endm
@@ -188,9 +197,41 @@ rew[1] pnp2Init(pnp2Start) .
 rew[30] pnp2Init(pnp2Start) .
 
 set print attribute off .
+
+select PNP2-SCENARIO .
+search [1] pnp2Init(pnp2Start) =>+ app:Application such that badState2(app:Application) .
+search [1] in PNP2-SCENARIO : pnp2Init(pnp2Start) =>+ app:Application such that badState2(app:Application) = true .
+
+No solution.
+states: 85  rewrites: 101485 in 36ms cpu (36ms real) (2772662 rewrites/second)
+
+search [1] pnp2InitI(pnp2Init(pnp2Start),(none).EMsgs) =>+ appI:AppIntruder such that badState2(appI:AppIntruder) .
+No solution.
+states: 85  rewrites: 101486 in 40ms cpu (42ms real) (2478835 rewrites/second)
+
+search [1] pnp2InitI(pnp2Init(pnp2Start),emsgI) =>+ appI:AppIntruder such that badState2(appI:AppIntruder) .
+Solution 1 (state 388)
+states: 389  rewrites: 562287 in 182ms cpu (184ms real) (3074101 rewrites/second),
+    
+search [1] pnp2InitI(pnp2Init(pnp2Start),emsgI emsgI1) =>+ appI:AppIntruder such that badState2(appI:AppIntruder) .
+Solution 1 (state 2873)
+states: 2874  rewrites: 4632106 in 1409ms cpu (1411ms real) (3285328 rewrites/second)
+
+search [1] pnp2InitI(pnp2Init(pnp2Start),emsgI emsgI1 emsgI2) =>+ appI:AppIntruder such that badState2(appI:AppIntruder) .
+Solution 1 (state 26440)
+states: 26441  rewrites: 60721279 in 19631ms cpu (19642ms real) (3093099  rewrites/second)
+
+
+
+red getBadEMsgsX('PNP2-SCENARIO,'badState2, pnp2InitI(pnp2Init(pnp2Start),(none).EMsgs)) .
+reduce in PNP2-ATTACKS : getBadEMsgsX('PNP2-SCENARIO, 'badState2, pnp2InitI(
+      pnp2Init(pnp2Start), none)) .
+rewrites: 202975 in 76ms cpu (76ms real) (2650842 rewrites/second)
+result EMsgsSet: (none).EMsgsSet
+  
 red pnp2Attacks .
 
-Maude> red pnp2Attacks .
+Maude> red pnp2Attacks . --- 7 fbs, bound 1
 reduce in PNP2-ATTACKS : pnp2Attacks .
 rewrites: 9064781 in 3489ms cpu (3493ms real) (2597633 rewrites/second)
 result EMsgsSet: 
@@ -198,7 +239,177 @@ result EMsgsSet:
 {{{id("ctlx1"),inEv("atL")},ev("atL")}} 
 {{{id("track1"),inEv("GoL")},ev("GoL")}} 
 {{{id("vac1"),inEv("VacOff")},ev("VacOff")}} {{{id("ctlx2"),inEv("HasVac")},ev("HasVac")}}
-{{{id("ctlx2"),inEv("atL")},ev("atL")}} {{{id("track2"),inEv("GoL")},ev("GoL")}} 
+{{{id("ctlx2"),inEv("atL")},ev("atL")}} 
+{{{id("track2"),inEv("GoL")},ev("GoL")}} 
 {{{id("vac2"),inEv("VacOff")},ev("VacOff")}}
-    
-    
+
+139 143    
+red pnp2Attacks1 .   --- 7 fbs bound 2
+Maude> red pnp2Attacks1 .
+reduce in PNP2-ATTACKS : pnp2Attacks1 .
+rewrites: 381774718 in 231539ms cpu (231905ms real) (1648856 rewrites/second)
+141 solutions
+result EMsgsSet: {{{id("coord"),inEv("ready1")},ev("ready")} {{id("ctlx1"),
+    inEv("HasVac")},ev("HasVac")}} {{{id("coord"),inEv("ready1")},ev("ready")}
+    {{id("track1"),inEv("GoL")},ev("GoL")}} {{{id("coord"),inEv("ready2")},ev(
+    "ready")} {{id("ctlx2"),inEv("HasVac")},ev("HasVac")}} {{{id("coord"),inEv(
+    "ready2")},ev("ready")} {{id("track2"),inEv("GoL")},ev("GoL")}} {{{id(
+    "coord"),inEv("start")},ev("start")} {{id("ctlx1"),inEv("HasVac")},ev(
+    "HasVac")}} {{{id("coord"),inEv("start")},ev("start")} {{id("ctlx1"),inEv(
+    "atL")},ev("atL")}} {{{id("coord"),inEv("start")},ev("start")} {{id(
+    "ctlx2"),inEv("HasVac")},ev("HasVac")}} {{{id("coord"),inEv("start")},ev(
+    "start")} {{id("ctlx2"),inEv("atL")},ev("atL")}} {{{id("coord"),inEv(
+    "start")},ev("start")} {{id("track1"),inEv("GoL")},ev("GoL")}} {{{id(
+    "coord"),inEv("start")},ev("start")} {{id("track2"),inEv("GoL")},ev(
+    "GoL")}} {{{id("coord"),inEv("start")},ev("start")} {{id("vac1"),inEv(
+    "VacOff")},ev("VacOff")}} {{{id("coord"),inEv("start")},ev("start")} {{id(
+    "vac2"),inEv("VacOff")},ev("VacOff")}} {{{id("ctlx1"),inEv("HasVac")},ev(
+    "HasVac")} {{id("ctlx1"),inEv("atL")},ev("atL")}} {{{id("ctlx1"),inEv(
+    "HasVac")},ev("HasVac")} {{id("ctlx1"),inEv("atR")},ev("atR")}} {{{id(
+    "ctlx1"),inEv("HasVac")},ev("HasVac")} {{id("ctlx1"),inEv("start")},ev(
+    "start")}} {{{id("ctlx1"),inEv("HasVac")},ev("HasVac")} {{id("ctlx2"),inEv(
+    "HasVac")},ev("HasVac")}} {{{id("ctlx1"),inEv("HasVac")},ev("HasVac")} {{
+    id("ctlx2"),inEv("NoVac")},ev("NoVac")}} {{{id("ctlx1"),inEv("HasVac")},ev(
+    "HasVac")} {{id("ctlx2"),inEv("atL")},ev("atL")}} {{{id("ctlx1"),inEv(
+    "HasVac")},ev("HasVac")} {{id("ctlx2"),inEv("atR")},ev("atR")}} {{{id(
+    "ctlx1"),inEv("HasVac")},ev("HasVac")} {{id("ctlx2"),inEv("start")},ev(
+    "start")}} {{{id("ctlx1"),inEv("HasVac")},ev("HasVac")} {{id("track1"),
+    inEv("GoL")},ev("GoL")}} {{{id("ctlx1"),inEv("HasVac")},ev("HasVac")} {{id(
+    "track1"),inEv("GoR")},ev("GoR")}} {{{id("ctlx1"),inEv("HasVac")},ev(
+    "HasVac")} {{id("track1"),inEv("GoR1")},ev("GoR1")}} {{{id("ctlx1"),inEv(
+    "HasVac")},ev("HasVac")} {{id("track2"),inEv("GoL")},ev("GoL")}} {{{id(
+    "ctlx1"),inEv("HasVac")},ev("HasVac")} {{id("track2"),inEv("GoL1")},ev(
+    "GoL1")}} {{{id("ctlx1"),inEv("HasVac")},ev("HasVac")} {{id("track2"),inEv(
+    "GoR")},ev("GoR")}} {{{id("ctlx1"),inEv("HasVac")},ev("HasVac")} {{id(
+    "track2"),inEv("GoR1")},ev("GoR1")}} {{{id("ctlx1"),inEv("HasVac")},ev(
+    "HasVac")} {{id("vac1"),inEv("VacOff")},ev("VacOff")}} {{{id("ctlx1"),inEv(
+    "HasVac")},ev("HasVac")} {{id("vac1"),inEv("VacOn")},ev("VacOn")}} {{{id(
+    "ctlx1"),inEv("HasVac")},ev("HasVac")} {{id("vac2"),inEv("VacOff")},ev(
+    "VacOff")}} {{{id("ctlx1"),inEv("HasVac")},ev("HasVac")} {{id("vac2"),inEv(
+    "VacOn")},ev("VacOn")}} {{{id("ctlx1"),inEv("NoVac")},ev("NoVac")} {{id(
+    "ctlx1"),inEv("atL")},ev("atL")}} {{{id("ctlx1"),inEv("NoVac")},ev(
+    "NoVac")} {{id("ctlx2"),inEv("HasVac")},ev("HasVac")}} {{{id("ctlx1"),inEv(
+    "NoVac")},ev("NoVac")} {{id("track2"),inEv("GoL")},ev("GoL")}} {{{id(
+    "ctlx1"),inEv("atL")},ev("atL")} {{id("ctlx1"),inEv("atR")},ev("atR")}} {{{
+    id("ctlx1"),inEv("atL")},ev("atL")} {{id("ctlx1"),inEv("start")},ev(
+    "start")}} {{{id("ctlx1"),inEv("atL")},ev("atL")} {{id("ctlx2"),inEv(
+    "HasVac")},ev("HasVac")}} {{{id("ctlx1"),inEv("atL")},ev("atL")} {{id(
+    "ctlx2"),inEv("atL")},ev("atL")}} {{{id("ctlx1"),inEv("atL")},ev("atL")} {{
+    id("ctlx2"),inEv("atR")},ev("atR")}} {{{id("ctlx1"),inEv("atL")},ev("atL")}
+    {{id("ctlx2"),inEv("start")},ev("start")}} {{{id("ctlx1"),inEv("atL")},ev(
+    "atL")} {{id("track1"),inEv("GoL")},ev("GoL")}} {{{id("ctlx1"),inEv(
+    "atL")},ev("atL")} {{id("track1"),inEv("GoR")},ev("GoR")}} {{{id("ctlx1"),
+    inEv("atL")},ev("atL")} {{id("track1"),inEv("GoR1")},ev("GoR1")}} {{{id(
+    "ctlx1"),inEv("atL")},ev("atL")} {{id("track2"),inEv("GoL")},ev("GoL")}} {{
+    {id("ctlx1"),inEv("atL")},ev("atL")} {{id("track2"),inEv("GoL1")},ev(
+    "GoL1")}} {{{id("ctlx1"),inEv("atL")},ev("atL")} {{id("track2"),inEv(
+    "GoR")},ev("GoR")}} {{{id("ctlx1"),inEv("atL")},ev("atL")} {{id("track2"),
+    inEv("GoR1")},ev("GoR1")}} {{{id("ctlx1"),inEv("atL")},ev("atL")} {{id(
+    "vac1"),inEv("VacOff")},ev("VacOff")}} {{{id("ctlx1"),inEv("atL")},ev(
+    "atL")} {{id("vac1"),inEv("VacOn")},ev("VacOn")}} {{{id("ctlx1"),inEv(
+    "atL")},ev("atL")} {{id("vac2"),inEv("VacOff")},ev("VacOff")}} {{{id(
+    "ctlx1"),inEv("atL")},ev("atL")} {{id("vac2"),inEv("VacOn")},ev("VacOn")}}
+    {{{id("ctlx1"),inEv("atR")},ev("atR")} {{id("ctlx2"),inEv("HasVac")},ev(
+    "HasVac")}} {{{id("ctlx1"),inEv("atR")},ev("atR")} {{id("ctlx2"),inEv(
+    "atL")},ev("atL")}} {{{id("ctlx1"),inEv("atR")},ev("atR")} {{id("track1"),
+    inEv("GoL")},ev("GoL")}} {{{id("ctlx1"),inEv("atR")},ev("atR")} {{id(
+    "track2"),inEv("GoL")},ev("GoL")}} {{{id("ctlx1"),inEv("atR")},ev("atR")} {
+    {id("vac1"),inEv("VacOff")},ev("VacOff")}} {{{id("ctlx1"),inEv("atR")},ev(
+    "atR")} {{id("vac2"),inEv("VacOff")},ev("VacOff")}} {{{id("ctlx1"),inEv(
+    "start")},ev("start")} {{id("ctlx2"),inEv("HasVac")},ev("HasVac")}} {{{id(
+    "ctlx1"),inEv("start")},ev("start")} {{id("ctlx2"),inEv("atL")},ev("atL")}}
+    {{{id("ctlx1"),inEv("start")},ev("start")} {{id("track1"),inEv("GoL")},ev(
+    "GoL")}} {{{id("ctlx1"),inEv("start")},ev("start")} {{id("track2"),inEv(
+    "GoL")},ev("GoL")}} {{{id("ctlx1"),inEv("start")},ev("start")} {{id(
+    "vac1"),inEv("VacOff")},ev("VacOff")}} {{{id("ctlx1"),inEv("start")},ev(
+    "start")} {{id("vac2"),inEv("VacOff")},ev("VacOff")}} {{{id("ctlx2"),inEv(
+    "HasVac")},ev("HasVac")} {{id("ctlx2"),inEv("atL")},ev("atL")}} {{{id(
+    "ctlx2"),inEv("HasVac")},ev("HasVac")} {{id("ctlx2"),inEv("atR")},ev(
+    "atR")}} {{{id("ctlx2"),inEv("HasVac")},ev("HasVac")} {{id("ctlx2"),inEv(
+    "start")},ev("start")}} {{{id("ctlx2"),inEv("HasVac")},ev("HasVac")} {{id(
+    "track1"),inEv("GoL")},ev("GoL")}} {{{id("ctlx2"),inEv("HasVac")},ev(
+    "HasVac")} {{id("track1"),inEv("GoL1")},ev("GoL1")}} {{{id("ctlx2"),inEv(
+    "HasVac")},ev("HasVac")} {{id("track1"),inEv("GoR")},ev("GoR")}} {{{id(
+    "ctlx2"),inEv("HasVac")},ev("HasVac")} {{id("track1"),inEv("GoR1")},ev(
+    "GoR1")}} {{{id("ctlx2"),inEv("HasVac")},ev("HasVac")} {{id("track2"),inEv(
+    "GoL")},ev("GoL")}} {{{id("ctlx2"),inEv("HasVac")},ev("HasVac")} {{id(
+    "track2"),inEv("GoR")},ev("GoR")}} {{{id("ctlx2"),inEv("HasVac")},ev(
+    "HasVac")} {{id("track2"),inEv("GoR1")},ev("GoR1")}} {{{id("ctlx2"),inEv(
+    "HasVac")},ev("HasVac")} {{id("vac1"),inEv("VacOff")},ev("VacOff")}} {{{id(
+    "ctlx2"),inEv("HasVac")},ev("HasVac")} {{id("vac1"),inEv("VacOn")},ev(
+    "VacOn")}} {{{id("ctlx2"),inEv("HasVac")},ev("HasVac")} {{id("vac2"),inEv(
+    "VacOff")},ev("VacOff")}} {{{id("ctlx2"),inEv("HasVac")},ev("HasVac")} {{
+    id("vac2"),inEv("VacOn")},ev("VacOn")}} {{{id("ctlx2"),inEv("NoVac")},ev(
+    "NoVac")} {{id("ctlx2"),inEv("atL")},ev("atL")}} {{{id("ctlx2"),inEv(
+    "NoVac")},ev("NoVac")} {{id("track1"),inEv("GoL")},ev("GoL")}} {{{id(
+    "ctlx2"),inEv("atL")},ev("atL")} {{id("ctlx2"),inEv("atR")},ev("atR")}} {{{
+    id("ctlx2"),inEv("atL")},ev("atL")} {{id("ctlx2"),inEv("start")},ev(
+    "start")}} {{{id("ctlx2"),inEv("atL")},ev("atL")} {{id("track1"),inEv(
+    "GoL")},ev("GoL")}} {{{id("ctlx2"),inEv("atL")},ev("atL")} {{id("track1"),
+    inEv("GoL1")},ev("GoL1")}} {{{id("ctlx2"),inEv("atL")},ev("atL")} {{id(
+    "track1"),inEv("GoR")},ev("GoR")}} {{{id("ctlx2"),inEv("atL")},ev("atL")} {
+    {id("track1"),inEv("GoR1")},ev("GoR1")}} {{{id("ctlx2"),inEv("atL")},ev(
+    "atL")} {{id("track2"),inEv("GoL")},ev("GoL")}} {{{id("ctlx2"),inEv(
+    "atL")},ev("atL")} {{id("track2"),inEv("GoR")},ev("GoR")}} {{{id("ctlx2"),
+    inEv("atL")},ev("atL")} {{id("track2"),inEv("GoR1")},ev("GoR1")}} {{{id(
+    "ctlx2"),inEv("atL")},ev("atL")} {{id("vac1"),inEv("VacOff")},ev(
+    "VacOff")}} {{{id("ctlx2"),inEv("atL")},ev("atL")} {{id("vac1"),inEv(
+    "VacOn")},ev("VacOn")}} {{{id("ctlx2"),inEv("atL")},ev("atL")} {{id(
+    "vac2"),inEv("VacOff")},ev("VacOff")}} {{{id("ctlx2"),inEv("atL")},ev(
+    "atL")} {{id("vac2"),inEv("VacOn")},ev("VacOn")}} {{{id("ctlx2"),inEv(
+    "atR")},ev("atR")} {{id("track1"),inEv("GoL")},ev("GoL")}} {{{id("ctlx2"),
+    inEv("atR")},ev("atR")} {{id("track2"),inEv("GoL")},ev("GoL")}} {{{id(
+    "ctlx2"),inEv("atR")},ev("atR")} {{id("vac1"),inEv("VacOff")},ev(
+    "VacOff")}} {{{id("ctlx2"),inEv("atR")},ev("atR")} {{id("vac2"),inEv(
+    "VacOff")},ev("VacOff")}} {{{id("ctlx2"),inEv("start")},ev("start")} {{id(
+    "track1"),inEv("GoL")},ev("GoL")}} {{{id("ctlx2"),inEv("start")},ev(
+    "start")} {{id("track2"),inEv("GoL")},ev("GoL")}} {{{id("ctlx2"),inEv(
+    "start")},ev("start")} {{id("vac1"),inEv("VacOff")},ev("VacOff")}} {{{id(
+    "ctlx2"),inEv("start")},ev("start")} {{id("vac2"),inEv("VacOff")},ev(
+    "VacOff")}} {{{id("track1"),inEv("GoL")},ev("GoL")} {{id("track1"),inEv(
+    "GoR")},ev("GoR")}} {{{id("track1"),inEv("GoL")},ev("GoL")} {{id("track1"),
+    inEv("GoR1")},ev("GoR1")}} {{{id("track1"),inEv("GoL")},ev("GoL")} {{id(
+    "track2"),inEv("GoL")},ev("GoL")}} {{{id("track1"),inEv("GoL")},ev("GoL")}
+    {{id("track2"),inEv("GoL1")},ev("GoL1")}} {{{id("track1"),inEv("GoL")},ev(
+    "GoL")} {{id("track2"),inEv("GoR")},ev("GoR")}} {{{id("track1"),inEv(
+    "GoL")},ev("GoL")} {{id("track2"),inEv("GoR1")},ev("GoR1")}} {{{id(
+    "track1"),inEv("GoL")},ev("GoL")} {{id("vac1"),inEv("VacOff")},ev(
+    "VacOff")}} {{{id("track1"),inEv("GoL")},ev("GoL")} {{id("vac1"),inEv(
+    "VacOn")},ev("VacOn")}} {{{id("track1"),inEv("GoL")},ev("GoL")} {{id(
+    "vac2"),inEv("VacOff")},ev("VacOff")}} {{{id("track1"),inEv("GoL")},ev(
+    "GoL")} {{id("vac2"),inEv("VacOn")},ev("VacOn")}} {{{id("track1"),inEv(
+    "GoL1")},ev("GoL1")} {{id("track2"),inEv("GoL")},ev("GoL")}} {{{id(
+    "track1"),inEv("GoL1")},ev("GoL1")} {{id("vac2"),inEv("VacOff")},ev(
+    "VacOff")}} {{{id("track1"),inEv("GoR")},ev("GoR")} {{id("track2"),inEv(
+    "GoL")},ev("GoL")}} {{{id("track1"),inEv("GoR")},ev("GoR")} {{id("vac1"),
+    inEv("VacOff")},ev("VacOff")}} {{{id("track1"),inEv("GoR")},ev("GoR")} {{
+    id("vac2"),inEv("VacOff")},ev("VacOff")}} {{{id("track1"),inEv("GoR1")},ev(
+    "GoR1")} {{id("track2"),inEv("GoL")},ev("GoL")}} {{{id("track1"),inEv(
+    "GoR1")},ev("GoR1")} {{id("vac1"),inEv("VacOff")},ev("VacOff")}} {{{id(
+    "track1"),inEv("GoR1")},ev("GoR1")} {{id("vac2"),inEv("VacOff")},ev(
+    "VacOff")}} {{{id("track2"),inEv("GoL")},ev("GoL")} {{id("track2"),inEv(
+    "GoR")},ev("GoR")}} {{{id("track2"),inEv("GoL")},ev("GoL")} {{id("track2"),
+    inEv("GoR1")},ev("GoR1")}} {{{id("track2"),inEv("GoL")},ev("GoL")} {{id(
+    "vac1"),inEv("VacOff")},ev("VacOff")}} {{{id("track2"),inEv("GoL")},ev(
+    "GoL")} {{id("vac1"),inEv("VacOn")},ev("VacOn")}} {{{id("track2"),inEv(
+    "GoL")},ev("GoL")} {{id("vac2"),inEv("VacOff")},ev("VacOff")}} {{{id(
+    "track2"),inEv("GoL")},ev("GoL")} {{id("vac2"),inEv("VacOn")},ev("VacOn")}}
+    {{{id("track2"),inEv("GoL1")},ev("GoL1")} {{id("vac1"),inEv("VacOff")},ev(
+    "VacOff")}} {{{id("track2"),inEv("GoR")},ev("GoR")} {{id("vac1"),inEv(
+    "VacOff")},ev("VacOff")}} {{{id("track2"),inEv("GoR")},ev("GoR")} {{id(
+    "vac2"),inEv("VacOff")},ev("VacOff")}} {{{id("track2"),inEv("GoR1")},ev(
+    "GoR1")} {{id("vac1"),inEv("VacOff")},ev("VacOff")}} {{{id("track2"),inEv(
+    "GoR1")},ev("GoR1")} {{id("vac2"),inEv("VacOff")},ev("VacOff")}} {{{id(
+    "vac1"),inEv("VacOff")},ev("VacOff")} {{id("vac1"),inEv("VacOn")},ev(
+    "VacOn")}} {{{id("vac1"),inEv("VacOff")},ev("VacOff")} {{id("vac2"),inEv(
+    "VacOff")},ev("VacOff")}} {{{id("vac1"),inEv("VacOff")},ev("VacOff")} {{id(
+    "vac2"),inEv("VacOn")},ev("VacOn")}} {{{id("vac1"),inEv("VacOn")},ev(
+    "VacOn")} {{id("vac2"),inEv("VacOff")},ev("VacOff")}} {{{id("vac2"),inEv(
+    "VacOff")},ev("VacOff")} {{id("vac2"),inEv("VacOn")},ev("VacOn")}} {{{id(
+    "ctlx1"),inEv("HasVac")},ev("HasVac")}} {{{id("ctlx1"),inEv("atL")},ev(
+    "atL")}} {{{id("ctlx2"),inEv("HasVac")},ev("HasVac")}} {{{id("ctlx2"),inEv(
+    "atL")},ev("atL")}} {{{id("track1"),inEv("GoL")},ev("GoL")}} {{{id(
+    "track2"),inEv("GoL")},ev("GoL")}} {{{id("vac1"),inEv("VacOff")},ev(
+    "VacOff")}} {{{id("vac2"),inEv("VacOff")},ev("VacOff")}}
+
+red pnp2Attacks2 .   --- 7 fbs bound 3  8:24  cpu 55s

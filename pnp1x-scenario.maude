@@ -1,0 +1,239 @@
+mod PNP-SCENARIO is
+  inc FB-LIB .   ---- vac waits for atL to turn off
+  inc APP-EXE .
+
+  
+ **** op PnP : -> AppC .
+
+  eq appLinks(id("pnp1")) = 
+   {{id("vac"),outEv("NoVac")}, {id("ctl"),inEv("NoVac")}}
+   {{id("vac"),outEv("HasVac")},{id("ctl"),inEv("HasVac")}}
+   {{id("ctl"),outEv("VacOn")}, {id("vac"), inEv("VacOn")}}
+   {{id("ctl"),outEv("VacOff")},{id("vac"), inEv("VacOff")}} 
+   {{id("track"),outEv("atR")}, {id("ctl"),inEv("atR")}}
+   {{id("track"),outEv("atL")},{id("ctl"),inEv("atL")}}
+**** new
+   {{id("track"),outEv("atL")},{id("vac"),inEv("atL")}}
+   {{id("ctl"),outEv("GoR")}, {id("track"), inEv("GoR")}}
+   {{id("ctl"),outEv("GoL")}, {id("track"), inEv("GoL")}}
+   {{id("track"),outEv("GoR1")},{id("track"), inEv("GoR1")}} 
+   {{id("track"),outEv("GoL1")},{id("track"), inEv("GoL1")}} 
+   {{id("pnp1"), {id("ctl"),inEv("start")}},
+    {id("ctl"),inEv("start")}}
+   .
+
+  var emsg : EMsg .
+  var emsgs : EMsgs .
+  ops emsgStart emsgI emsgI1 emsgI2 emsgI3 : -> EMsg .
+  eq emsgStart = {{id("ctl"),inEv("start")}, ev("start")} .
+  eq emsgI = {{sid(10,1),sin(10,2)},sev(10,3)} .
+  eq emsgI1 = {{sid(20,1),sin(20,2)},sev(20,3)} .
+  eq emsgI2 = {{sid(30,1),sin(30,2)},sev(30,3)} .
+  eq emsgI3 = {{sid(40,1),sin(40,2)},sev(40,3)} .
+
+  eq appFBs(id("pnp1")) = id("vac") id("track") id("ctl") .
+
+**** from fb-lib fbs have ticked = false, ready for trans
+  op pnpInit : EMsg -> Application .
+  eq pnpInit(emsg) = 
+     [id("pnp1") |
+     (fbs : (vacInit(id("vac")) 
+           trackInit(id("track")) 
+           ctlInit(id("ctl"))) ) ;
+     iEMsgs : emsg ;
+     oEMsgs : none ;
+     ssbs : none ] .
+ 
+  op pnpInitI : Application EMsgs -> AppIntruder .
+  eq pnpInitI(app:Application,emsgs) = [app:Application,emsgs] .
+
+  vars vacFB trackFB : FB .
+  var fbs : FBs .
+  
+  op badState : FBs -> Bool .
+  ceq badState(vacFB trackFB fbs) 
+   = true
+   if cidOf(vacFB) == vac 
+   /\ cidOf(trackFB) == track
+   /\ (getState(vacFB) == st("off")
+       or getState(vacFB) == st("on-novac"))
+   /\ getState(trackFB) == st("mvL") .
+  eq badState(fbs) = false [owise] .
+
+
+  op badState : Application -> Bool .
+  eq badState(app:Application)
+   = badState(getFBs(app:Application)) .
+
+  op badState : AppIntruder -> Bool .
+  eq badState([app:Application,emsgs])
+   = badState(getFBs(app:Application)) .
+
+
+  op badState1 : FBs -> Bool .
+  ceq badState1(vacFB trackFB fbs) 
+   = true
+   if cidOf(vacFB) == vac 
+   /\ cidOf(trackFB) == track
+   /\ getState(vacFB) == st("off")
+   /\ getState(trackFB) == st("mvL") .
+  eq badState1(fbs) = false [owise] .
+
+
+  op badState1 : Application -> Bool .
+  eq badState1(app:Application)
+   = badState1(getFBs(app:Application)) .
+
+  op badState1 : AppIntruder -> Bool .
+  eq badState1([app:Application,emsgs])
+   = badState1(getFBs(app:Application)) .
+
+        
+endm
+
+mod PNP-ATTACKS is
+  inc PNP-SCENARIO .
+  inc TRACE2ATTACKS .
+  
+  op pnpAttacks0 : -> EMsgsSet .
+  eq pnpAttacks0 = getBadEMsgs('PNP-SCENARIO,pnpInitI(pnpInit(emsgStart),(none).EMsgs)) .
+
+  op pnpAttacks1 : -> EMsgsSet .
+  eq pnpAttacks1 = getBadEMsgs('PNP-SCENARIO,pnpInitI(pnpInit(emsgStart),emsgI)) .
+
+  op pnpAttacks2 : -> EMsgsSet .
+  eq pnpAttacks2 = getBadEMsgs('PNP-SCENARIO,pnpInitI(pnpInit(emsgStart),emsgI emsgI1)) .
+
+  op pnpAttacks3 : -> EMsgsSet .
+  eq pnpAttacks3 = getBadEMsgs('PNP-SCENARIO,pnpInitI(pnpInit(emsgStart),emsgI emsgI1 emsgI2)) .
+
+
+  op pnp1Attacks0 : -> EMsgsSet .
+  eq pnp1Attacks0 = getBadEMsgsX('PNP-SCENARIO,'badState1,pnpInitI(pnpInit(emsgStart),(none).EMsgs)) .
+
+  op pnp1Attacks1 : -> EMsgsSet .
+  eq pnp1Attacks1 = getBadEMsgsX('PNP-SCENARIO,'badState1,pnpInitI(pnpInit(emsgStart),emsgI))  .
+
+  op pnp1Attacks2 : -> EMsgsSet .
+  eq pnp1Attacks2 = getBadEMsgsX('PNP-SCENARIO,'badState1,pnpInitI(pnpInit(emsgStart),emsgI emsgI1)) .
+
+  op pnp1Attacks3 : -> EMsgsSet .
+  eq pnp1Attacks3 = getBadEMsgsX('PNP-SCENARIO,'badState1,pnpInitI(pnpInit(emsgStart),emsgI emsgI1 emsgI2)) .
+
+
+endm
+eof
+
+select PNP-SCENARIO .
+red pnpInit(emsgStart) .
+rew [20] pnpInit(emsgStart) .
+
+select PNP-SCENARIO .
+
+search [1] pnpInit(emsgStart) =>+ app:Application such that badState(app:Application) .
+No solution.
+states: 28  rewrites: 9612 in 6ms cpu (7ms real) 
+
+search [1] pnpInit(emsgStart) =>+ app:Application such that badState1(app:Application) .
+No solution.
+states: 28  rewrites: 9471 in 7ms cpu (7ms real) 
+
+search [1] pnpInitI(pnpInit(emsgStart),(none).EMsgs) =>+ app:AppIntruder such that badState(app:AppIntruder) .
+No solution.
+states: 28  rewrites: 9613 in 6ms cpu (6ms real) 
+
+search [1] pnpInitI(pnpInit(emsgStart),emsgI)  =>+ app:AppIntruder such that badState(app:AppIntruder) .
+Solution 1 (state 76)
+states: 77  rewrites: 25376 in 15ms cpu (16ms real) 
+LOff mvL off 
+iEMsgs : {{id("ctl"),inEv("atR")},ev("atR")} ;
+ssbs : ((sev(10, 3) :~ ev("GoL")) (sid(10, 1) :~ id("track"))
+       (sin(10, 2) :~ inEv("GoL")))
+
+search [1] pnpInitI(pnpInit(emsgStart),emsgI emsgI1)  =>+ app:AppIntruder such that badState(app:AppIntruder) .
+Solution 1 (state 362)
+states: 363  rewrites: 125268 in 47ms cpu (47ms real)
+LOff mvL off
+iEMsgs : {{id("ctl"),inEv("atR")},ev("atR")};
+ssbs : ((sev(10, 3) :~ ev("GoR")) (sin(10, 2) :~ inEv("GoR"))
+        (sid(10, 1) :~ id("track")) 
+        (sev(20, 3) :~ ev("GoL")) (sin(20, 2) :~ inEv("GoL"))
+        (sid(20, 1) :~ id("track")) 
+       )
+    
+search [1] pnpInitI(pnpInit(emsgStart),emsgI emsgI1 emsgI2)  =>+ app:AppIntruder such that badState(app:AppIntruder) .
+Solution 1 (state 1482)
+states: 1483  rewrites: 546283 in 176ms cpu (177ms real) 
+Loff mvL off
+iEMsgs : {{id("ctl"),inEv("atR")},ev("atR")}
+ssbs : ((sev(10, 3) :~ ev("GoR")) (sid(10, 1) :~ id("track")) 
+        (sin(10, 2) :~ inEv("GoR"))
+        (sev(20, 3) :~ ev("GoL")) (sid(20, 1) :~ id("track")) 
+        (sin(20, 2) :~ inEv("GoL")) )
+        
+search [1] pnpInitI(pnpInit(emsgStart),(none).EMsgs) =>+ app:AppIntruder such that badState1(app:AppIntruder) .
+No solution.
+states: 28  rewrites: 9472 in 7ms cpu (8ms real)
+        
+search [1] pnpInitI(pnpInit(emsgStart),emsgI)  =>+ app:AppIntruder such that badState1(app:AppIntruder) .
+Solution 1 (state 76)
+states: 77  rewrites: 24964 in 14ms cpu (14ms real) 
+LOff mvL off
+iEMsgs : {{id("ctl"),inEv("atR")},ev("atR")} 
+ssbs : ((sev(10, 3) :~ ev("GoL")) (sid(10, 1) :~ id("track")) 
+        (sin(10, 2) :~ inEv("GoL")))
+    
+search [1] pnpInitI(pnpInit(emsgStart),emsgI emsgI1)  =>+ app:AppIntruder such that badState1(app:AppIntruder) .
+Solution 1 (state 362)
+states: 363  rewrites: 123268 in 47ms cpu (48ms real) 
+LOff mvL off
+iEMsgs : {{id("ctl"),inEv("atR")},ev("atR")}
+ssbs : ((sev(10, 3) :~ ev("GoR")) (sid(10, 1) :~ id("track"))
+        (sin(10, 2) :~ inEv("GoR"))
+        (sev(20, 3) :~ ev("GoL")) (sid(20, 1) :~ id("track")) 
+        (sin(20, 2) :~ inEv("GoL")))
+
+search [1] pnpInitI(pnpInit(emsgStart),emsgI emsgI1 emsgI2)  =>+ app:AppIntruder such that badState1(app:AppIntruder) .
+
+
+red pnpAttacks0 .
+red pnpAttacks1 .
+red pnpAttacks2 .
+red pnpAttacks3 .
+
+red pnp1Attacks0 .
+rewrites: 18954 in 17ms cpu (19ms real) 
+result EMsgsSet: (none).EMsgsSet
+
+red pnp1Attacks1 .
+rewrites: 338057 in 128ms cpu (129ms real) 
+result EMsgsSet: {{{id("track"),inEv("GoL")},ev("GoL")}}
+
+red pnp1Attacks2 .
+rewrites: 5800410 in 2059ms cpu (2062ms real) (2816586 rewrites/second)
+result EMsgsSet: 
+
+{{{id("ctl"),inEv("atL")},ev("atL")} 
+ {{id("vac"),inEv( "atL")},ev("atL")}} 
+ 
+{{{id("vac"),inEv("VacOff")},ev( "VacOff")} 
+ {{id("vac"),inEv("atL")},ev("atL")}} 
+ 
+{{{id("ctl"),inEv("HasVac")},ev("HasVac")} {{id("track"),inEv("GoL")},ev("GoL")}} 
+{{{id("ctl"),inEv("atR")},ev("atR")} 
+ {{id("track"), inEv("GoL")},ev("GoL")}} 
+{{{id("ctl"),inEv("start")},ev("start")} 
+ {{id( "track"),inEv("GoL")},ev("GoL")}} 
+{{{id("track"),inEv("GoL")},ev("GoL")} 
+ {{ id("track"),inEv("GoR")},ev("GoR")}} 
+
+{{{id("track"),inEv("GoL")},ev("GoL")} 
+ {{id("track"),inEv("GoR1")},ev("GoR1")}} 
+
+{{{id("track"),inEv( "GoL")},ev("GoL")}}
+
+
+red pnp1Attacks3 .
+
+
+

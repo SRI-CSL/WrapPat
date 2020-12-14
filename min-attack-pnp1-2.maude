@@ -1,0 +1,80 @@
+load load-pnp1-2.maude *** loads load1 pnp1-2-scenario 
+load min-attacks
+
+mod TEST-MIN-ATTACKS is
+  inc MIN-ATTACKS .
+****  inc PNP-SCENARIO .
+  inc PNP2-ATTACKS .
+  
+***(
+EMsgsSet s  
+badstate2
+ pnp2Attacks     -- 1 msgs
+ pnp2Attacks1    --- 2 msgs
+ pnp2Attacks2   --- 3 msgs
+
+red size(pnp2Attacks) .
+)
+
+*** eml[j] -- the emsg sets of size j from input
+op pnp2Att1L : -> EMsgssList .
+eq pnp2Att1L = emsgsSet2emsgsList(pnp2Attacks) .
+op pnp2Att1Lp : -> EMsgssList .
+eq pnp2Att1Lp = pruneEMsgss(pnp2Att1L) .
+
+op pnp2Att1mp : -> EMsgsSet .
+eq pnp2Att1mp = genMinProts([none,pnp2Att1Lp],none) .
+
+op pnp2Att2L : -> EMsgssList .
+eq pnp2Att2L = emsgsSet2emsgsList(pnp2Attacks1) .
+op pnp2Att2Lp : -> EMsgssList .
+eq pnp2Att2Lp = pruneEMsgss(pnp2Att2L) .
+
+op pnp2Att3L : -> EMsgssList .
+eq pnp2Att3L = emsgsSet2emsgsList(pnp2Attacks2) .
+op pnp2Att3Lp : -> EMsgssList .
+eq pnp2Att3Lp = pruneEMsgss(pnp2Att3L) .
+
+  
+endm
+eof
+
+***(
+red size(pnp2Attacks) .
+*** 0
+red len(pnp2Att1L) .
+*** 
+red size(getNth(pnp2Att1L,0)) .
+*** 
+
+red size(getNth(pnp2Att1Lp,0)) .
+*** 
+
+red genMinProts([none,pnp2Att1Lp],none) .
+
+***(
+red size(pnp2Attacks1) .
+*** 12  --- 1807570ms cpu
+red len(pnp2Att2L) .
+*** 2
+red size(getNth(pnp2Att2L,0)) .
+*** 0
+red size(getNth(pnp2Att2L,1)) .
+*** 12
+
+red size(getNth(pnp2Att2Lp,1)) .
+*** 12
+
+red size(flattenEMsgssList(pnp2Att2Lp,none)) .
+14
+
+red genMinProts([none,pnp2Att2Lp],none) .
+ EMsgsSet: 
+ {{{id("track1"),inEv("HasVac")},ev("HasVac")}   
+  {{id("track1"),inEv("noVac")},ev("noVac")} 
+  {{id("track2"),inEv("HasVac")},ev("HasVac")} 
+  {{id("track2"),inEv("noVac")},ev("noVac")} 
+  {{id("vac1"),inEv("atL")},ev("atL")} 
+  {{id("vac2"),inEv("atL")},ev("atL")}}     
+)
+

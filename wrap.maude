@@ -30,7 +30,8 @@ fmod WRAP-SYSTEM is
  vars emsg emsg0 : EMsg .
  var emsgss : EMsgsSet .
  
-
+***(
+**** 20nov25 moved to emessages.maude
  op addEMsgs : EMsgs EMsgs -> EMsgs .
  ceq addEMsgs(emsgs, emsgs0 emsg) =
       addEMsgs(emsgs emsg0, emsgs0) 
@@ -41,7 +42,7 @@ fmod WRAP-SYSTEM is
  eq flattenEMsgsSet(none,emsgs) = emsgs .
  eq flattenEMsgsSet({emsgs0} emsgss,emsgs) = 
      flattenEMsgsSet(emsgss,addEMsgs(emsgs,emsgs0)) .
- 
+ )
  op wrap-sys : System EMsgsSet -> System .
  op wrap-devs : Apps EMsgs Links Map{Id,Id} Apps -> Apps . 
  op wrap-dev : Application EMsgs Links Map{Id,Id} 

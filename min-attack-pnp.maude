@@ -1,0 +1,90 @@
+load load-pnp.maude *** loads load pnp-scenario pnp-attacks
+load min-attacks
+
+mod TEST-MIN-ATTACKS is
+  inc MIN-ATTACKS .
+****  inc PNP-SCENARIO .
+  inc PNP-ATTACKS .
+  
+***(
+EMsgsSet s  
+badstate
+ pnpAttacks0 mt  -- no msgs
+ pnpAttacks    --- 1 msg 
+ pnpAttacks1   --- 2 msgs
+ pnpAttacks2   --- 3 msgs  
+
+red pnpAttacks .
+result EMsgsSet: 
+{{{id("ctl"),inEv("HasVac")},ev("HasVac")}} {{{id("ctl"),inEv("atL")},ev("atL")}} {{{id("track"),inEv("GoL")},ev("GoL")}} 
+{{{id("vac"), inEv("VacOff")},ev("VacOff")}
+)
+
+*** eml[j] -- the emsg sets of size j from input
+op pnpAtt1L : -> EMsgssList .
+eq pnpAtt1L = emsgsSet2emsgsList(pnpAttacks) .
+op pnpAtt1Lp : -> EMsgssList .
+eq pnpAtt1Lp = pruneEMsgss(pnpAtt1L) .
+
+op pnpAtt2L : -> EMsgssList .
+eq pnpAtt2L = emsgsSet2emsgsList(pnpAttacks1) .
+op pnpAtt2Lp : -> EMsgssList .
+eq pnpAtt2Lp = pruneEMsgss(pnpAtt2L) .
+
+op pnpAtt2mp : -> EMsgsSet .
+eq pnpAtt2mp = genMinProts([none,pnpAtt2Lp],none) .
+
+op pnpAtt3L : -> EMsgssList .
+eq pnpAtt3L = emsgsSet2emsgsList(pnpAttacks2) .
+op pnpAtt3Lp : -> EMsgssList .
+eq pnpAtt3Lp = pruneEMsgss(pnpAtt3L) .
+
+op pnpAtt3mp : -> EMsgsSet .
+eq pnpAtt3mp = genMinProts([none,pnpAtt3Lp],none) .
+
+op pnpAtt3mp : -> EMsgsSet .
+eq pnpAtt3mp = genMinProts([none,pnpAtt3Lp],none) .
+
+endm
+eof
+
+***(
+red size(pnpAttacks) .
+*** 4 
+red len(pnpAtt1L) .
+*** 1
+red size(getNth(pnpAtt1L,0)) .
+*** 4
+
+red size(getNth(pnpAtt1Lp,0)) .
+*** 4
+
+red genMinProts([none,pnpAtt1Lp],none) .
+ EMsgsSet: 
+ {{{id("ctl"),inEv("HasVac")},ev("HasVac")} 
+  {{id("ctl"),inEv("atL")},ev("atL")}    
+  {{id("track"),inEv("GoL")},ev("GoL")} 
+  {{id("vac"),inEv("VacOff")},ev("VacOff")}}
+    
+)
+
+
+***(
+red len(pnpAtt2L) .
+*** 2
+red size(getNth(pnpAtt2L,0)) .
+*** 4
+red size(getNth(pnpAtt2L,1)) .
+*** 39
+
+red size(getNth(pnpAtt2Lp,0)) .
+*** 4
+red size(getNth(pnpAtt2Lp,1)) .
+*** 0
+
+red genMinProts([none,pnpAtt2Lp],none) .
+ EMsgsSet: {{{id("ctl"),inEv("HasVac")},ev("HasVac")} {{id("ctl"),inEv( "atL")},ev("atL")} {{id("track"),inEv("GoL")},ev("GoL")} 
+ {{id("vac"),inEv("VacOff")},ev("VacOff")}} 
+
+)
+
